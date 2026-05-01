@@ -25,7 +25,9 @@ SECRET_KEY = "django-insecure-#de+llm0($p)kg#a3wyunu3*p%+f0ttv5v8440p9w7m1m13%3-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'https://invoice-beta-pied.vercel.app'
+]
 
 
 # Application definition
