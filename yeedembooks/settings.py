@@ -25,15 +25,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-#de+llm0($p)kg#a3wyunu3*p%+f0ttv5v8440p9w7m1m13%3-')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-    'invoice-beta-pied.vercel.app',
-    'invoice-zu89.vercel.app',
-    '.vercel.app',  # This allows all Vercel subdomains for this project
-    'localhost',
-    '127.0.0.1'
-]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition

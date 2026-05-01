@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 import urllib.parse
 from django.http import HttpResponse
 from django.template.loader import get_template
-from xhtml2pdf import pisa
 import random
 import string
 from django.db.models import Sum, Count
@@ -94,6 +93,7 @@ def invoice_edit(request, pk):
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Invoice {invoice.invoice_number}'})
 
 def invoice_pdf(request, pk):
+    from xhtml2pdf import pisa
     invoice = get_object_or_404(Invoice, pk=pk)
     template_path = 'core/invoice_pdf.html'
     context = {'invoice': invoice}
