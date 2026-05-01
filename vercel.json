@@ -1,29 +1,25 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "yeedembooks/wsgi.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "15mb",
-        "runtime": "python3.12"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "yeedembooks/wsgi.py"
-    }
-  ],
-  "functions": {
-    "yeedembooks/wsgi.py": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  }
+    "version": 2,
+    "builds": [
+        {
+            "src": "yeedembooks/wsgi.py",
+            "use": "@vercel/python",
+            "config": { "maxLambdaSize": "15mb", "runtime": "python3.12" }
+        },
+        {
+            "src": "build_files.sh",
+            "use": "@vercel/static-build",
+            "config": { "distDir": "staticfiles_build" }
+        }
+    ],
+    "routes": [
+        {
+            "src": "/static/(.*)",
+            "dest": "/static/$1"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "yeedembooks/wsgi.py"
+        }
+    ]
 }
