@@ -1,0 +1,187 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Create Invoice | Yeedem Books{% endblock %}
+
+{% block extra_head %}
+<style>
+    .form-card {
+        background: var(--glass);
+        backdrop-filter: var(--blur);
+        -webkit-backdrop-filter: var(--blur);
+        padding: 2.5rem;
+        border-radius: 1.5rem;
+        box-shadow: var(--card-shadow);
+        max-width: 700px;
+        margin: 0 auto;
+        border: 1px solid rgba(255, 255, 255, 0.4);
+    }
+    .form-group {
+        margin-bottom: 2rem;
+    }
+    .form-group label {
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.75rem;
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+        width: 100%;
+        padding: 1rem;
+        border: 2px solid rgba(226, 232, 240, 0.8);
+        border-radius: 1rem;
+        font-family: inherit;
+        font-size: 1rem;
+        transition: var(--transition);
+        background: rgba(255, 255, 255, 0.9);
+    }
+    .form-group input:focus, .form-group select:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 4px var(--primary-light);
+        transform: translateY(-2px);
+    }
+    .recorder-ui {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 1rem;
+        border: 2px dashed var(--primary-light);
+    }
+    .record-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: var(--primary);
+        border: none;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: var(--transition);
+    }
+    .record-btn.recording {
+        background: var(--accent);
+        animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+        70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+    }
+    .form-actions {
+        display: flex;
+        gap: 1.5rem;
+        margin-top: 3rem;
+    }
+    .btn-secondary {
+        background: rgba(226, 232, 240, 0.8);
+        color: var(--text-dark);
+    }
+    .btn-secondary:hover {
+        background: #e2e8f0;
+        transform: translateY(-2px);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div style="margin-bottom: 3rem; text-align: center;">
+        <h1 style="font-size: 2.5rem; background: linear-gradient(to right, var(--primary), var(--primary-dark)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">{{ title|default:"Create New Invoice" }}</h1>
+        <p class="text-muted" style="font-size: 1.1rem;">Empowering your business with smart invoicing.</p>
+    </div>
+
+    <div class="form-card">
+        <form id="invoice-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% for field in form %}
+            <div class="form-group" {% if field.name == 'voice_record' %}id="voice-record-group"{% endif %}>
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                
+                {% if field.name == 'voice_record' %}
+                    <div class="recorder-ui">
+                        <button type="button" id="record-btn" class="record-btn">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                        </button>
+                        <div id="record-status" class="text-muted" style="font-size: 0.9rem;">Click to start recording voice note...</div>
+                        <audio id="record-preview" controls style="display: none; height: 40px;"></audio>
+                    </div>
+                    <div style="display: none;">{{ field }}</div>
+                {% else %}
+                    {{ field }}
+                {% endif %}
+
+                {% if field.errors %}
+                    <div style="color: var(--accent); font-size: 0.875rem; margin-top: 0.5rem; font-weight: 600;">
+                        {{ field.errors.0 }}
+                    </div>
+                {% endif %}
+                {% if field.help_text %}
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic;">{{ field.help_text }}</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary" style="flex: 2; justify-content: center;">Save & Generate</button>
+                <a href="{% url 'core:dashboard' %}" class="btn btn-secondary" style="flex: 1; justify-content: center;">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let mediaRecorder;
+    let audioChunks = [];
+    const recordBtn = document.getElementById('record-btn');
+    const statusText = document.getElementById('record-status');
+    const preview = document.getElementById('record-preview');
+    const fileInput = document.querySelector('input[name="voice_record"]');
+
+    recordBtn.addEventListener('click', async () => {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/mpeg' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    preview.src = audioUrl;
+                    preview.style.display = 'block';
+                    statusText.style.display = 'none';
+                    
+                    // Set file to input
+                    const file = new File([audioBlob], "voice_note.mp3", { type: "audio/mpeg" });
+                    const container = new DataTransfer();
+                    container.items.add(file);
+                    fileInput.files = container.files;
+                };
+
+                mediaRecorder.start();
+                recordBtn.classList.add('recording');
+                statusText.innerText = 'Recording... click again to stop';
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                statusText.innerText = 'Error accessing microphone. Please check permissions.';
+            }
+        } else {
+            mediaRecorder.stop();
+            recordBtn.classList.remove('recording');
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    });
+</script>
+{% endblock %}

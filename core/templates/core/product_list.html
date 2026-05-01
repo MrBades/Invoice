@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Products | Yeedem Books{% endblock %}
+
+{% block extra_head %}
+<style>
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .card {
+        background: var(--white);
+        border-radius: 1rem;
+        box-shadow: var(--card-shadow);
+        overflow: hidden;
+    }
+    .table-container {
+        overflow-x: auto;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+    }
+    th {
+        background: #f1f5f9;
+        padding: 1rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+    td {
+        padding: 1rem;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    .stock-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-weight: 600;
+        font-size: 0.75rem;
+    }
+    .stock-in { color: #166534; background: #dcfce7; }
+    .stock-low { color: #991b1b; background: #fee2e2; }
+    
+    @media (max-width: 600px) {
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="section-header">
+        <div>
+            <h1>Products & Inventory</h1>
+            <p class="text-muted">Manage your stock and pricing.</p>
+        </div>
+        <a href="{% url 'core:product_create' %}" class="btn btn-primary">+ Add Product</a>
+    </div>
+
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Product Name</th>
+                        <th>Retail Price</th>
+                        <th>Wholesale Price</th>
+                        <th>Stock</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for product in products %}
+                    <tr>
+                        <td><strong>{{ product.name }}</strong></td>
+                        <td>₦{{ product.retail_price|floatformat:2 }}</td>
+                        <td>₦{{ product.wholesale_price|floatformat:2 }}</td>
+                        <td>{{ product.stock_quantity }}</td>
+                        <td>
+                            <span class="stock-badge {% if product.stock_quantity > 5 %}stock-in{% else %}stock-low{% endif %}">
+                                {% if product.stock_quantity > 5 %}In Stock{% else %}Low Stock{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'core:product_edit' product.pk %}" class="text-muted" style="font-size: 0.875rem; font-weight: 600; color: var(--primary);">Edit</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 4rem;">
+                            <p class="text-muted">No products found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

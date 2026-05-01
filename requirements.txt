@@ -1,0 +1,9 @@
+Django>=5.0,<6.0
+django-htmx
+whitenoise
+gunicorn
+psycopg2-binary
+dj-database-url
+python-dotenv
+xhtml2pdf
+Pillow

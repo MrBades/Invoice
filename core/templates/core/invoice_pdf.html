@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        @page {
+            size: a4 portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: Helvetica, Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+        }
+        .header {
+            border-bottom: 2px solid #008751;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .logo {
+            color: #008751;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .invoice-title {
+            text-align: right;
+            font-size: 32px;
+            color: #008751;
+        }
+        .details-table {
+            width: 100%;
+            margin-bottom: 40px;
+        }
+        .details-table td {
+            vertical-align: top;
+            width: 50%;
+        }
+        .label {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .value {
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        .items-table th {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px;
+            text-align: left;
+            font-size: 12px;
+        }
+        .items-table td {
+            border-bottom: 1px solid #dee2e6;
+            padding: 10px;
+            font-size: 12px;
+        }
+        .totals-section {
+            margin-left: 60%;
+        }
+        .total-row {
+            padding: 5px 0;
+            font-size: 14px;
+        }
+        .total-row.grand-total {
+            border-top: 1px solid #008751;
+            font-weight: bold;
+            font-size: 18px;
+            color: #008751;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <table style="width: 100%;">
+            <tr>
+                <td>
+                    <div class="logo">Yeedem Books</div>
+                    <div style="font-size: 12px; color: #666;">Lagos, Nigeria</div>
+                    <div style="font-size: 12px; color: #666;">TIN: 12345678-0001</div>
+                </td>
+                <td class="invoice-title">
+                    INVOICE
+                    <div style="font-size: 14px; color: #333; margin-top: 5px;">#{{ invoice.invoice_number }}</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <table class="details-table">
+        <tr>
+            <td>
+                <div class="label">Bill To</div>
+                <div class="value">{{ invoice.customer.name }}</div>
+                <div style="font-size: 12px; color: #666;">{{ invoice.customer.phone_number }}</div>
+                {% if invoice.customer.tin %}
+                <div style="font-size: 12px; color: #666;">TIN: {{ invoice.customer.tin }}</div>
+                {% endif %}
+            </td>
+            <td style="text-align: right;">
+                <div class="label">Date Issued</div>
+                <div class="value">{{ invoice.issue_date }}</div>
+                <div class="label" style="margin-top: 15px;">Due Date</div>
+                <div class="value">{{ invoice.expected_pay_date|default:invoice.issue_date }}</div>
+            </td>
+        </tr>
+    </table>
+
+    <table class="items-table">
+        <thead>
+            <tr>
+                <th>Description</th>
+                <th style="text-align: right;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>General Services / Products</td>
+                <td style="text-align: right;">₦{{ invoice.subtotal|floatformat:2 }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="totals-section">
+        <table style="width: 100%;">
+            <tr class="total-row">
+                <td>Subtotal</td>
+                <td style="text-align: right;">₦{{ invoice.subtotal|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row">
+                <td>VAT (7.5%)</td>
+                <td style="text-align: right;">₦{{ invoice.vat_amount|floatformat:2 }}</td>
+            </tr>
+            <tr class="total-row grand-total">
+                <td>Total</td>
+                <td style="text-align: right;">₦{{ invoice.total_amount|floatformat:2 }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="footer">
+        <p>FIRS NRS Clearance: {{ invoice.nrs_irn|default:"Pending Verification" }}</p>
+        <p>Thank you for your business!</p>
+        <p style="margin-top: 10px;">&copy; 2026 Yeedem Books. All rights reserved.</p>
+    </div>
+</body>
+</html>
