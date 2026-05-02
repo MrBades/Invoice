@@ -2,7 +2,7 @@
     "version": 2,
     "builds": [
         {
-            "src": "yeedembooks/wsgi.py",
+            "src": "wsgi_vercel.py",
             "use": "@vercel/python",
             "config": { "maxLambdaSize": "50mb", "runtime": "python3.12" }
         },
@@ -19,7 +19,7 @@
         },
         {
             "src": "/(.*)",
-            "dest": "yeedembooks/wsgi.py"
+            "dest": "wsgi_vercel.py"
         }
     ]
 }
