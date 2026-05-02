@@ -4,7 +4,8 @@ from pathlib import Path
 
 # Add the project root to sys.path
 BASE_DIR = Path(__file__).resolve().parent
-sys.path.append(str(BASE_DIR))
+if str(BASE_DIR) not in sys.path:
+    sys.path.append(str(BASE_DIR))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "yeedembooks.settings")
 
@@ -14,7 +15,7 @@ try:
     app = application
 except Exception as e:
     import traceback
-    error_msg = f"Error during WSGI application initialization in wsgi_vercel.py:\n{traceback.format_exc()}"
+    error_msg = f"Error during WSGI application initialization:\n{traceback.format_exc()}"
     print(error_msg, file=sys.stderr)
 
     def app(environ, start_response):
