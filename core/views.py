@@ -9,7 +9,7 @@ from .models import Invoice, Customer, Product
 from .forms import InvoiceForm, CustomerForm, ProductForm
 
 def dashboard(request):
-    # Aggregated stats
+    # Aggregated statss
     total_invoiced = Invoice.objects.aggregate(total=Sum('total_amount'))['total'] or 0
     total_paid = Invoice.objects.aggregate(total=Sum('amount_paid'))['total'] or 0
     total_debt = total_invoiced - total_paid
