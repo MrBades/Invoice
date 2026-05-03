@@ -93,17 +93,110 @@ def invoice_edit(request, pk):
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Invoice {invoice.invoice_number}'})
 
 def invoice_pdf(request, pk):
-    from xhtml2pdf import pisa
+    from fpdf import FPDF
+    import io
+
     invoice = get_object_or_404(Invoice, pk=pk)
-    template_path = 'core/invoice_pdf.html'
-    context = {'invoice': invoice}
-    response = HttpResponse(content_type='application/pdf')
+
+    # Create instance of FPDF class
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12)
+
+    # Header
+    pdf.set_font("Helvetica", 'B', 16)
+    pdf.set_text_color(0, 135, 81) # #008751 (Yeedem Green)
+    pdf.cell(0, 10, "Yeedem Books", ln=True)
+    pdf.set_font("Helvetica", size=10)
+    pdf.set_text_color(102, 102, 102)
+    pdf.cell(0, 5, "Lagos, Nigeria", ln=True)
+    pdf.cell(0, 5, "TIN: 12345678-0001", ln=True)
+
+    pdf.ln(10)
+
+    # Invoice Title
+    pdf.set_font("Helvetica", 'B', 24)
+    pdf.set_text_color(0, 135, 81)
+    pdf.cell(0, 15, "INVOICE", ln=True, align='R')
+    pdf.set_font("Helvetica", size=12)
+    pdf.set_text_color(51, 51, 51)
+    pdf.cell(0, 10, f"#{invoice.invoice_number}", ln=True, align='R')
+
+    pdf.ln(10)
+
+    # Customer Details
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.set_text_color(102, 102, 102)
+    pdf.cell(100, 5, "BILL TO", ln=0)
+    pdf.cell(0, 5, "DATE ISSUED", ln=1, align='R')
+
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.set_text_color(51, 51, 51)
+    pdf.cell(100, 7, invoice.customer.name, ln=0)
+    pdf.cell(0, 7, str(invoice.issue_date), ln=1, align='R')
+
+    pdf.set_font("Helvetica", size=10)
+    pdf.set_text_color(102, 102, 102)
+    pdf.cell(100, 5, invoice.customer.phone_number, ln=0)
+    pdf.cell(0, 5, "DUE DATE", ln=1, align='R')
+
+    if invoice.customer.tin:
+        pdf.cell(100, 5, f"TIN: {invoice.customer.tin}", ln=0)
+    else:
+        pdf.cell(100, 5, "", ln=0)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.set_text_color(51, 51, 51)
+    pdf.cell(0, 5, str(invoice.expected_pay_date or invoice.issue_date), ln=1, align='R')
+
+    pdf.ln(15)
+
+    # Items Table
+    pdf.set_fill_color(248, 249, 250)
+    pdf.set_font("Helvetica", 'B', 10)
+    pdf.cell(140, 10, "Description", border=1, fill=True)
+    pdf.cell(50, 10, "Amount", border=1, fill=True, align='R')
+    pdf.ln()
+
+    pdf.set_font("Helvetica", size=10)
+    pdf.cell(140, 10, "General Services / Products", border=1)
+    pdf.cell(50, 10, f"N{invoice.subtotal:,.2f}", border=1, align='R')
+    pdf.ln(20)
+
+    # Totals
+    pdf.set_x(120)
+    pdf.cell(40, 8, "Subtotal:")
+    pdf.cell(30, 8, f"N{invoice.subtotal:,.2f}", align='R', ln=True)
+
+    pdf.set_x(120)
+    pdf.cell(40, 8, "VAT (7.5%):")
+    pdf.cell(30, 8, f"N{invoice.vat_amount:,.2f}", align='R', ln=True)
+
+    pdf.set_x(120)
+    pdf.set_font("Helvetica", 'B', 12)
+    pdf.set_text_color(0, 135, 81)
+    pdf.cell(40, 10, "Total:")
+    pdf.cell(30, 10, f"N{invoice.total_amount:,.2f}", align='R', ln=True)
+
+    pdf.ln(30)
+
+    # Footer
+    pdf.set_font("Helvetica", size=10)
+    pdf.set_text_color(102, 102, 102)
+    pdf.cell(0, 5, f"FIRS NRS Clearance: {invoice.nrs_irn or 'Pending Verification'}", align='C', ln=True)
+    pdf.cell(0, 5, "Thank you for your business!", align='C', ln=True)
+    pdf.cell(0, 10, "© 2026 Yeedem Books. All rights reserved.", align='C', ln=True)
+
+    # Output the PDF to a buffer
+    buffer = io.BytesIO()
+    pdf_output = pdf.output()
+    if isinstance(pdf_output, str):
+        buffer.write(pdf_output.encode('latin-1'))
+    else:
+        buffer.write(pdf_output)
+    buffer.seek(0)
+
+    response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.invoice_number}.pdf"'
-    template = get_template(template_path)
-    html = template.render(context)
-    pisa_status = pisa.CreatePDF(html, dest=response)
-    if pisa_status.err:
-       return HttpResponse(f'Error generating PDF: {pisa_status.err}')
     return response
 
 def clear_invoice_firs(request, pk):

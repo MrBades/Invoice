@@ -5,6 +5,5 @@ gunicorn==21.2.0
 psycopg2-binary==2.9.9
 dj-database-url==2.1.0
 python-dotenv==1.0.1
-xhtml2pdf==0.2.11
-reportlab==3.6.13
+fpdf2==2.7.9
 Pillow==10.2.0
