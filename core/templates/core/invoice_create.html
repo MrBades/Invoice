@@ -97,6 +97,22 @@
         <p class="text-muted" style="font-size: 1.1rem;">Empowering your business with smart invoicing.</p>
     </div>
 
+    <!-- Fast-Item Grid -->
+    {% if top_products %}
+    <div style="max-width: 700px; margin: 0 auto 2rem auto;">
+        <h3 style="font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 1rem;">Fast-Item Select</h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+            {% for product in top_products %}
+            <button type="button" class="btn btn-secondary" style="padding: 1rem; flex-direction: column; height: auto;"
+                    onclick="selectProduct('{{ product.id }}', '{{ product.retail_price }}')">
+                <span style="font-weight: 700;">{{ product.name }}</span>
+                <span style="font-size: 0.8rem; opacity: 0.7;">₦{{ product.retail_price }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="form-card">
         <form id="invoice-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -105,7 +121,12 @@
             <div class="form-group" {% if field.name == 'voice_record' %}id="voice-record-group"{% endif %}>
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                 
-                {% if field.name == 'voice_record' %}
+                {% if field.name == 'is_gbese' %}
+                    <div style="display: flex; align-items: center; gap: 1rem; background: #fffbeb; padding: 1rem; border-radius: 1rem; border: 1px solid #fef3c7;">
+                        {{ field }}
+                        <span style="font-weight: 700; color: #92400e;">Mark as Outstanding Debt (Gbese)</span>
+                    </div>
+                {% elif field.name == 'voice_record' %}
                     <div class="recorder-ui">
                         <button type="button" id="record-btn" class="record-btn">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
@@ -183,5 +204,27 @@
             mediaRecorder.stream.getTracks().forEach(track => track.stop());
         }
     });
+    function selectProduct(productId, price) {
+        const customerSelect = document.querySelector('select[name="customer"]');
+        const subtotalInput = document.querySelector('input[name="subtotal"]');
+
+        if (subtotalInput) {
+            subtotalInput.value = price;
+        }
+
+        // Visual feedback
+        const buttons = document.querySelectorAll('button[onclick^="selectProduct"]');
+        buttons.forEach(btn => {
+            if (btn.getAttribute('onclick').includes(`'${productId}'`)) {
+                btn.style.borderColor = 'var(--secondary)';
+                btn.style.backgroundColor = 'var(--primary-light)';
+                btn.style.color = 'white';
+            } else {
+                btn.style.borderColor = '';
+                btn.style.backgroundColor = '';
+                btn.style.color = '';
+            }
+        });
+    }
 </script>
 {% endblock %}

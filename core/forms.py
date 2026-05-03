@@ -4,7 +4,7 @@ from .models import Invoice, Customer, Product
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['customer', 'issue_date', 'expected_pay_date', 'subtotal', 'status', 'draft_image', 'voice_record']
+        fields = ['customer', 'issue_date', 'expected_pay_date', 'subtotal', 'status', 'is_gbese', 'draft_image', 'voice_record']
         widgets = {
             'issue_date': forms.DateInput(attrs={'type': 'date'}),
             'expected_pay_date': forms.DateInput(attrs={'type': 'date'}),

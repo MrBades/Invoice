@@ -85,6 +85,15 @@
 
 {% block content %}
 <div class="animate-fade-in">
+    <!-- Trust Link Section -->
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 0.75rem; margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center; max-width: 900px; margin-left: auto; margin-right: auto;">
+        <div>
+            <strong style="color: #166534; font-size: 0.9rem;">Trust Link (WhatsApp optimized)</strong>
+            <p style="margin: 0; font-size: 0.8rem; color: #166534;">Send this read-only link to your customer.</p>
+        </div>
+        <a href="{% url 'core:public_invoice_detail' invoice.public_token %}" target="_blank" style="color: var(--secondary); font-weight: 700; font-size: 0.9rem; text-decoration: none;">View Public Link</a>
+    </div>
+
     <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
         <a href="{% url 'core:invoice_list' %}" style="text-decoration: none; color: var(--text-muted); display: flex; align-items: center; gap: 0.5rem;">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>

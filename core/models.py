@@ -10,6 +10,23 @@ class Customer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def average_days_to_pay(self):
+        paid_invoices = self.invoices.filter(status='Paid', expected_pay_date__isnull=False)
+        if not paid_invoices.exists():
+            return None
+
+        total_days = 0
+        count = 0
+        for inv in paid_invoices:
+            # Simple heuristic: created_at to updated_at if status is Paid
+            # Or better, if we had a payment date. Let's use created_at to updated_at for now.
+            delta = inv.updated_at.date() - inv.created_at.date()
+            total_days += delta.days
+            count += 1
+
+        return total_days / count
+
     def __str__(self):
         return f"{self.name} - Score: {self.trust_score}"
 
@@ -56,6 +73,8 @@ class Invoice(models.Model):
 
     nrs_irn = models.CharField(max_length=100, blank=True, null=True, help_text="FIRS Invoice Reference Number")
     qr_code_url = models.URLField(blank=True, null=True)
+    is_gbese = models.BooleanField(default=False, help_text="Mark as debt if unpaid")
+    public_token = models.CharField(max_length=100, unique=True, blank=True, null=True)
     clearance_status = models.CharField(max_length=20, choices=CLEARANCE_CHOICES, default='Pending')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
     
@@ -63,6 +82,7 @@ class Invoice(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        import uuid
         if not self.invoice_number:
             year = timezone.now().year
             last_invoice = Invoice.objects.filter(invoice_number__contains=f"YB-{year}").order_by('-id').first()
@@ -72,6 +92,10 @@ class Invoice(models.Model):
             else:
                 new_number = f"YB-{year}-0001"
             self.invoice_number = new_number
+
+        if not self.public_token:
+            self.public_token = uuid.uuid4().hex
+
         super().save(*args, **kwargs)
 
     def __str__(self):

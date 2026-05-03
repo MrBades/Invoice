@@ -5,6 +5,8 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('smart-input/', views.smart_input_processor, name='smart_input_processor'),
+    path('trust/<str:token>/', views.public_invoice_detail, name='public_invoice_detail'),
     path('invoices/', views.invoice_list, name='invoice_list'),
     path('invoices/create/', views.invoice_create, name='invoice_create'),
     path('invoices/<int:pk>/', views.invoice_detail, name='invoice_detail'),

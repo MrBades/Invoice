@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invoice {{ invoice.invoice_number }} | Yeedem Books</title>
+    <style>
+        body { font-family: sans-serif; background: #F9FAFB; color: #0A192F; margin: 0; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+        .header { border-bottom: 2px solid #10B981; padding-bottom: 10px; margin-bottom: 20px; }
+        .total { font-size: 24px; font-weight: bold; color: #10B981; }
+        .row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .footer { font-size: 12px; color: #666; margin-top: 30px; text-align: center; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-paid { background: #dcfce7; color: #166534; }
+        .badge-debt { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="header">
+            <h2 style="margin: 0;">Yeedem Books</h2>
+            <p style="margin: 5px 0; font-size: 14px;">Invoice #{{ invoice.invoice_number }}</p>
+        </div>
+
+        <div class="row">
+            <span>Customer:</span>
+            <strong>{{ invoice.customer.name }}</strong>
+        </div>
+        <div class="row">
+            <span>Date:</span>
+            <span>{{ invoice.issue_date }}</span>
+        </div>
+        <hr>
+        <div class="row">
+            <span>Amount:</span>
+            <span class="total">₦{{ invoice.total_amount|floatformat:2 }}</span>
+        </div>
+        <div class="row">
+            <span>Status:</span>
+            <span class="badge {% if invoice.status == 'Paid' %}badge-paid{% else %}badge-debt{% endif %}">
+                {{ invoice.status }}{% if invoice.is_gbese %} (Debt){% endif %}
+            </span>
+        </div>
+
+        <div class="footer">
+            <p>Verified by Yeedem Books. FIRS NRS: {{ invoice.nrs_irn|default:"Pending" }}</p>
+        </div>
+    </div>
+</body>
+</html>

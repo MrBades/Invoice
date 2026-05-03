@@ -135,6 +135,16 @@
         <p class="text-muted">Welcome back, here's what's happening today.</p>
     </div>
 
+    <!-- Smart Input Bar -->
+    <div class="card" style="margin-bottom: 2rem; padding: 1.5rem;">
+        <form action="{% url 'core:smart_input_processor' %}" method="POST" style="display: flex; gap: 1rem;">
+            {% csrf_token %}
+            <input type="text" name="smart_text" placeholder='Try typing "Rice 5k to Musa"'
+                   style="flex: 1; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; font-size: 1rem;" required>
+            <button type="submit" class="btn btn-primary">Quick Invoice</button>
+        </form>
+    </div>
+
     <div class="stats-grid">
         <div class="stat-card">
             <h3>Total Invoiced</h3>
@@ -180,7 +190,22 @@
                                 {{ invoice.invoice_number }}
                             </a>
                         </td>
-                        <td>{{ invoice.customer.name }}</td>
+                        <td>
+                            {{ invoice.customer.name }}
+                            {% with avg_days=invoice.customer.average_days_to_pay %}
+                                {% if avg_days != None %}
+                                    {% if avg_days < 7 %}
+                                        <span title="Safe (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟢</span>
+                                    {% elif avg_days < 21 %}
+                                        <span title="Warning (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟡</span>
+                                    {% else %}
+                                        <span title="High Risk (Avg Pay: {{ avg_days|floatformat:0 }} days)">🔴</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span title="No payment history">⚪</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                         <td>{{ invoice.issue_date }}</td>
                         <td>₦{{ invoice.total_amount }}</td>
                         <td>

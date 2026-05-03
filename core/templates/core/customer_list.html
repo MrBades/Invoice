@@ -79,7 +79,22 @@
                 <tbody>
                     {% for customer in customers %}
                     <tr>
-                        <td><strong>{{ customer.name }}</strong></td>
+                        <td>
+                            <strong>{{ customer.name }}</strong>
+                            {% with avg_days=customer.average_days_to_pay %}
+                                {% if avg_days != None %}
+                                    {% if avg_days < 7 %}
+                                        <span title="Safe (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟢</span>
+                                    {% elif avg_days < 21 %}
+                                        <span title="Warning (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟡</span>
+                                    {% else %}
+                                        <span title="High Risk (Avg Pay: {{ avg_days|floatformat:0 }} days)">🔴</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span title="No payment history">⚪</span>
+                                {% endif %}
+                            {% endwith %}
+                        </td>
                         <td>{{ customer.phone_number }}</td>
                         <td>{{ customer.tin|default:"-" }}</td>
                         <td>

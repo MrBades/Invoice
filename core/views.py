@@ -5,11 +5,58 @@ from django.template.loader import get_template
 import random
 import string
 from django.db.models import Sum, Count
-from .models import Invoice, Customer, Product
+from .models import Invoice, Customer, Product, InvoiceItem
 from .forms import InvoiceForm, CustomerForm, ProductForm
+from .utils import parse_smart_input
+from django.utils import timezone
+from decimal import Decimal
+
+def smart_input_processor(request):
+    if request.method == 'POST':
+        smart_text = request.POST.get('smart_text', '')
+        parsed_data = parse_smart_input(smart_text)
+
+        if parsed_data:
+            # Try to find customer
+            customer, _ = Customer.objects.get_or_create(
+                name=parsed_data['customer_name'],
+                defaults={'phone_number': '00000000000'} # Placeholder
+            )
+
+            # Try to find product
+            product = Product.objects.filter(name__icontains=parsed_data['product_name']).first()
+            if not product:
+                product = Product.objects.create(
+                    name=parsed_data['product_name'],
+                    retail_price=parsed_data['amount'],
+                    wholesale_price=parsed_data['amount'],
+                )
+
+            # Create Invoice
+            invoice = Invoice.objects.create(
+                customer=customer,
+                issue_date=timezone.now().date(),
+                subtotal=parsed_data['amount'],
+                vat_amount=parsed_data['amount'] * Decimal('0.075'),
+                total_amount=parsed_data['amount'] * Decimal('1.075'),
+                status='Draft'
+            )
+
+            # Create Invoice Item
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                product=product,
+                quantity=1,
+                unit_price=parsed_data['amount'],
+                total_price=parsed_data['amount']
+            )
+
+            return redirect('core:invoice_detail', pk=invoice.pk)
+
+    return redirect('core:dashboard')
 
 def dashboard(request):
-    # Aggregated statss
+    # Aggregated stats
     total_invoiced = Invoice.objects.aggregate(total=Sum('total_amount'))['total'] or 0
     total_paid = Invoice.objects.aggregate(total=Sum('amount_paid'))['total'] or 0
     total_debt = total_invoiced - total_paid
@@ -26,6 +73,9 @@ def dashboard(request):
     context = {
         'total_invoiced': f"{total_invoiced:,.2f}",
         'total_debt': f"{total_debt:,.2f}",
+        'total_sales_sum': f"{total_invoiced:,.0f}",
+        'total_paid_sum': f"{total_paid:,.0f}",
+        'total_debt_sum': f"{total_debt:,.0f}",
         'customer_count': customer_count,
         'clearance_rate': round(clearance_rate, 1),
         'recent_invoices': recent_invoices,
@@ -37,6 +87,10 @@ def invoice_list(request):
     invoices = Invoice.objects.all().order_by('-created_at')
     return render(request, 'core/invoice_list.html', {'invoices': invoices})
 
+
+def public_invoice_detail(request, token):
+    invoice = get_object_or_404(Invoice, public_token=token)
+    return render(request, 'core/public_invoice_detail.html', {'invoice': invoice})
 
 def invoice_detail(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
@@ -64,6 +118,8 @@ def invoice_detail(request, pk):
     return render(request, 'core/invoice_detail.html', context)
 
 def invoice_create(request):
+    top_products = Product.objects.annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
+
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request.FILES)
         if form.is_valid():
@@ -76,7 +132,11 @@ def invoice_create(request):
     else:
         form = InvoiceForm()
     
-    return render(request, 'core/invoice_create.html', {'form': form, 'title': 'Create New Invoice'})
+    return render(request, 'core/invoice_create.html', {
+        'form': form,
+        'title': 'Create New Invoice',
+        'top_products': top_products
+    })
 
 def invoice_edit(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
@@ -195,7 +255,7 @@ def invoice_pdf(request, pk):
         buffer.write(pdf_output)
     buffer.seek(0)
 
-    response = HttpResponse(buffer, content_type='application/pdf')
+    response = HttpResponse(buffer.getvalue(), content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.invoice_number}.pdf"'
     return response
 
