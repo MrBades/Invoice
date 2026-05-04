@@ -232,6 +232,7 @@
                 <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">Invoices</a>
                 <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">Customers</a>
                 <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}active{% endif %}">Products</a>
+                <a href="{% url 'core:team' %}" class="{% if 'team' in request.resolver_match.url_name %}active{% endif %}">Team</a>
             </div>
 
             <div class="nav-actions">
@@ -258,6 +259,7 @@
 
     <footer>
         <p>&copy; 2026 Yeedem Books. Optimized for MSMEs. Nigerian FIRS 2026 Compliant.</p>
+        <p class="mt-2 text-xs"><a href="{% url 'core:team' %}" class="hover:text-emerald-500">Developer Profile: Ajigboteso Azeez Sesan</a></p>
     </footer>
 
     <script>

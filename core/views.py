@@ -318,3 +318,6 @@ def product_edit(request, pk):
     else:
         form = ProductForm(instance=product)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Product: {product.name}'})
+
+def team(request):
+    return render(request, 'core/team.html')
