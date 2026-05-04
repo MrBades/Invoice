@@ -165,7 +165,7 @@ def invoice_pdf(request, pk):
 
     # Header
     pdf.set_font("Helvetica", 'B', 16)
-    pdf.set_text_color(0, 135, 81) # #008751 (Yeedem Green)
+    pdf.set_text_color(16, 185, 129) # #10B981 (Emerald Green)
     pdf.cell(0, 10, "Yeedem Books", ln=True)
     pdf.set_font("Helvetica", size=10)
     pdf.set_text_color(102, 102, 102)
@@ -176,7 +176,7 @@ def invoice_pdf(request, pk):
 
     # Invoice Title
     pdf.set_font("Helvetica", 'B', 24)
-    pdf.set_text_color(0, 135, 81)
+    pdf.set_text_color(16, 185, 129)
     pdf.cell(0, 15, "INVOICE", ln=True, align='R')
     pdf.set_font("Helvetica", size=12)
     pdf.set_text_color(51, 51, 51)
@@ -233,7 +233,7 @@ def invoice_pdf(request, pk):
 
     pdf.set_x(120)
     pdf.set_font("Helvetica", 'B', 12)
-    pdf.set_text_color(0, 135, 81)
+    pdf.set_text_color(16, 185, 129)
     pdf.cell(40, 10, "Total:")
     pdf.cell(30, 10, f"N{invoice.total_amount:,.2f}", align='R', ln=True)
 
