@@ -108,17 +108,18 @@
     }
 
     .badge {
-        padding: 0.35rem 1rem;
-        border-radius: 2rem;
-        font-size: 0.7rem;
+        padding: 0.5rem 1.25rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
         font-weight: 800;
         text-transform: uppercase;
         letter-spacing: 0.05em;
+        display: inline-block;
     }
 
-    .badge-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
-    .badge-warning { background: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
-    .badge-danger { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-success { background: #dcfce7; color: #166534; border: 2px solid #bbf7d0; }
+    .badge-warning { background: #fef9c3; color: #854d0e; border: 2px solid #fef08a; }
+    .badge-danger { background: #fee2e2; color: #991b1b; border: 2px solid #fecaca; }
 
     .empty-state {
         padding: 6rem 2rem;
@@ -137,11 +138,11 @@
 
     <!-- Smart Input Bar -->
     <div class="card" style="margin-bottom: 2rem; padding: 1.5rem;">
-        <form action="{% url 'core:smart_input_processor' %}" method="POST" style="display: flex; gap: 1rem;">
+        <form action="{% url 'core:smart_input_processor' %}" method="POST" style="display: flex; flex-wrap: wrap; gap: 1rem;">
             {% csrf_token %}
             <input type="text" name="smart_text" placeholder='Try typing "Rice 5k to Musa"'
-                   style="flex: 1; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 1px solid #e2e8f0; font-size: 1rem;" required>
-            <button type="submit" class="btn btn-primary">Quick Invoice</button>
+                   style="flex: 1; min-width: 250px; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 2px solid #33ccff; font-size: 1rem; outline: none;" required>
+            <button type="submit" class="btn btn-primary" style="flex: 0 0 auto; width: auto; min-width: 150px;">Quick Invoice</button>
         </form>
     </div>
 
