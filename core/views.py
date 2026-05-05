@@ -321,3 +321,7 @@ def product_edit(request, pk):
 
 def team(request):
     return render(request, 'core/team.html')
+
+def team_detail(request, member_slug):
+    template_name = f'core/team_{member_slug.replace("-", "_")}.html'
+    return render(request, template_name)
