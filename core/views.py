@@ -323,5 +323,13 @@ def team(request):
     return render(request, 'core/team.html')
 
 def team_detail(request, member_slug):
+    from django.template import TemplateDoesNotExist
+    from django.http import Http404
+
     template_name = f'core/team_{member_slug.replace("-", "_")}.html'
+    try:
+        get_template(template_name)
+    except TemplateDoesNotExist:
+        raise Http404("Team member profile not found.")
+
     return render(request, template_name)
