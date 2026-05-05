@@ -6,15 +6,15 @@
     <title>{% block title %}Yeedem Books{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <style>
         :root {
-            --primary: #0A192F; /* Deep Navy */
-            --primary-dark: #050c18;
+            --primary: #070840; /* Brand Navy */
+            --primary-dark: #050630;
             --primary-light: #1c3a6b;
-            --secondary: #10B981; /* Emerald Green */
+            --secondary: #33ccff; /* Brand Cyan */
             --accent: #F59E0B; /* Sunset Orange */
             --background: #F9FAFB;
             --surface: #FFFFFF;
@@ -31,7 +31,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Open Sans', 'Inter', sans-serif;
         }
 
         body {
@@ -41,6 +41,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            margin: 0;
         }
 
         nav {
@@ -52,7 +53,8 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             position: sticky;
             top: 0;
-            z-index: 100;
+            z-index: 1000;
+            margin: 0;
         }
 
         .logo {
@@ -166,21 +168,26 @@
             }
             .nav-links.active {
                 display: flex;
-                background: var(--white);
+                background: var(--primary);
                 position: absolute;
-                top: 70px;
+                top: 100%;
                 left: 0;
                 right: 0;
-                padding: 1rem 2rem;
-                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-                border-top: 1px solid #f1f5f9;
+                padding: 1.5rem 2rem;
+                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.3);
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
                 z-index: 101;
+            }
+            .nav-links.active a {
+                color: var(--secondary);
+                padding: 0.5rem 0;
+                font-size: 1.1rem;
             }
             .mobile-toggle {
                 display: block;
                 background: none;
                 border: none;
-                color: var(--primary);
+                color: var(--secondary);
                 font-size: 1.5rem;
                 cursor: pointer;
             }
@@ -210,7 +217,7 @@
 </head>
 <body>
     <!-- Daily Truth Summary Sticky -->
-    <div style="background: var(--secondary); color: white; padding: 0.5rem 1rem; position: sticky; top: 60px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 700; font-size: 0.85rem;">
+    <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; position: sticky; top: 58px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
         <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
             <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-sales" hx-trigger="load, truth-update from:body" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
             <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-cash" hx-trigger="load, truth-update from:body" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
