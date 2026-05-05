@@ -1,0 +1,21 @@
+{
+  "name": "Yeedem Books",
+  "short_name": "Yeedem",
+  "description": "Premium MSME Bookkeeping & Invoicing",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070840",
+  "theme_color": "#070840",
+  "icons": [
+    {
+      "src": "/static/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

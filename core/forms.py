@@ -10,6 +10,12 @@ class InvoiceForm(forms.ModelForm):
             'expected_pay_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk and not self.initial.get('issue_date'):
+            from django.utils import timezone
+            self.initial['issue_date'] = timezone.now().date()
+
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer

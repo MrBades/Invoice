@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="mb-8">
+        <a href="{% url 'core:team' %}" class="text-secondary font-bold flex items-center gap-2 hover:underline">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Back to Team
+        </a>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-100">
+        <div class="bg-primary p-8 md:p-12 text-center text-white">
+            <div class="w-32 h-32 bg-white/10 rounded-3xl mx-auto mb-6 flex items-center justify-center text-secondary border-4 border-secondary shadow-2xl">
+                <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <h1 class="text-4xl font-extrabold mb-2">Ajigboteso Azeez Sesan</h1>
+            <p class="text-xl text-secondary font-bold tracking-widest uppercase">Lead Developer & IT Support</p>
+        </div>
+
+        <div class="p-8 md:p-12">
+            <div class="prose prose-lg max-w-none text-slate-600">
+                <p class="text-gray-600 leading-relaxed mb-8">
+                    Detail-oriented and dependable IT Support Professional with hands-on experience providing technical support,
+                    maintaining IT infrastructure, and resolving hardware, software, and network issues. Skilled in end-user support,
+                    LAN networking, system troubleshooting, and service availability. Committed to delivering reliable,
+                    customer-focused IT solutions that support business operations.
+                </p>
+
+                <h3 class="text-2xl font-bold text-slate-900 mb-6 border-l-4 border-secondary pl-4">Professional Experience</h3>
+                <div class="space-y-8 mb-12">
+                    <div class="relative pl-8 border-l-2 border-slate-200 ml-4">
+                        <div class="absolute -left-2 top-0 w-4 h-4 bg-secondary rounded-full"></div>
+                        <p class="text-sm font-bold text-secondary uppercase tracking-wider mb-1">2025 - 2026</p>
+                        <h4 class="text-xl font-bold text-slate-900">IT Administrator</h4>
+                        <p class="text-slate-500 font-medium italic mb-2">Silverfox / Tunnel Lounge Ghana</p>
+                        <p class="text-sm">Ensuring comprehensive IT support across the organization, maintaining system availability, and managing hardware infrastructure.</p>
+                    </div>
+
+                    <div class="relative pl-8 border-l-2 border-slate-200 ml-4">
+                        <div class="absolute -left-2 top-0 w-4 h-4 bg-secondary rounded-full"></div>
+                        <p class="text-sm font-bold text-secondary uppercase tracking-wider mb-1">2023</p>
+                        <h4 class="text-xl font-bold text-slate-900">IT Support Engineer</h4>
+                        <p class="text-slate-500 font-medium italic mb-2">Nestlé Nigeria Plc</p>
+                        <p class="text-sm">Comprehensive IT support, diagnosed and repaired faulty hardware, and ensured minimal system downtime.</p>
+                    </div>
+
+                    <div class="relative pl-8 border-l-2 border-slate-200 ml-4">
+                        <div class="absolute -left-2 top-0 w-4 h-4 bg-secondary rounded-full"></div>
+                        <p class="text-sm font-bold text-secondary uppercase tracking-wider mb-1">2019</p>
+                        <h4 class="text-xl font-bold text-slate-900">IT Officer / Technician (NYSC)</h4>
+                        <p class="text-slate-500 font-medium italic mb-2">GBICTS Academy, Enugu State</p>
+                        <p class="text-sm">Responsible for network maintenance and responding to service outages.</p>
+                    </div>
+                </div>
+
+                <div class="bg-slate-50 p-8 rounded-3xl border border-slate-100">
+                    <h4 class="text-lg font-bold text-slate-900 mb-4">Core Expertise</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="px-3 py-1 bg-white text-slate-700 rounded-full text-xs font-bold border border-slate-200">LAN/WAN Networking</span>
+                        <span class="px-3 py-1 bg-white text-slate-700 rounded-full text-xs font-bold border border-slate-200">System Troubleshooting</span>
+                        <span class="px-3 py-1 bg-white text-slate-700 rounded-full text-xs font-bold border border-slate-200">Infrastructure Maintenance</span>
+                        <span class="px-3 py-1 bg-white text-slate-700 rounded-full text-xs font-bold border border-slate-200">User Administration</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

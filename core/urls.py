@@ -22,4 +22,5 @@ urlpatterns = [
     path('products/create/', views.product_create, name='product_create'),
     path('products/<int:pk>/edit/', views.product_edit, name='product_edit'),
     path('team/', views.team, name='team'),
+    path('team/<slug:member_slug>/', views.team_detail, name='team_detail'),
 ]
