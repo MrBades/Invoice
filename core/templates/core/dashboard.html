@@ -77,72 +77,15 @@
         background: var(--secondary);
     }
 
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-        transition: all 0.3s ease;
-    }
-
-    .section-header.shrunk {
+    .dashboard-header-shrunk {
         margin-bottom: 0.5rem;
         opacity: 0.8;
-    }
-
-    .section-header h2 {
-        font-size: 1.75rem;
-        font-weight: 800;
-    }
-
-    .card {
-        background: var(--glass);
-        backdrop-filter: var(--blur);
-        border-radius: 1.5rem;
-        box-shadow: var(--card-shadow);
-        overflow: hidden;
-        border: 1px solid rgba(255, 255, 255, 0.4);
     }
 
     .table-container {
         overflow-x: auto;
     }
 
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-
-    th {
-        background: rgba(241, 245, 249, 0.5);
-        padding: 1.25rem 1.5rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
-
-    td {
-        padding: 1.25rem 1.5rem;
-        border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-        font-size: 0.95rem;
-    }
-
-    .badge {
-        padding: 0.5rem 1.25rem;
-        border-radius: 9999px;
-        font-size: 0.75rem;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        display: inline-block;
-    }
-
-    .badge-success { background: #dcfce7; color: #166534; border: 2px solid #bbf7d0; }
-    .badge-warning { background: #fef9c3; color: #854d0e; border: 2px solid #fef08a; }
-    .badge-danger { background: #fee2e2; color: #991b1b; border: 2px solid #fecaca; }
 
     .empty-state {
         padding: 6rem 2rem;
@@ -179,8 +122,10 @@
 {% block content %}
 <div class="animate-fade-in">
     <div class="section-header" id="dashboard-header">
-        <h1>Business Overview</h1>
-        <p class="text-muted">Welcome back, here's what's happening today.</p>
+        <div>
+            <h1>Business Overview</h1>
+            <p class="text-muted">Welcome back, here's what's happening today.</p>
+        </div>
     </div>
 
     <script>
@@ -188,9 +133,9 @@
             const header = document.getElementById('dashboard-header');
             if (header) {
                 if (window.scrollY > 50) {
-                    header.classList.add('shrunk');
+                    header.classList.add('dashboard-header-shrunk');
                 } else {
-                    header.classList.remove('shrunk');
+                    header.classList.remove('dashboard-header-shrunk');
                 }
             }
         });
@@ -235,7 +180,7 @@
 
     <div class="section-header">
         <h2>Recent Invoices</h2>
-        <a href="{% url 'core:invoice_list' %}" class="btn btn-primary" style="background: none; color: var(--primary); border: 1px solid var(--primary);">View All</a>
+        <a href="{% url 'core:invoice_list' %}" class="btn" style="background: none; color: var(--primary); border: 1px solid var(--primary); font-size: 0.85rem; padding: 0.4rem 0.8rem;">View All</a>
     </div>
 
     <div class="card">

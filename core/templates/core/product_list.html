@@ -4,37 +4,6 @@
 
 {% block extra_head %}
 <style>
-    .section-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 2rem;
-    }
-    .card {
-        background: var(--white);
-        border-radius: 1rem;
-        box-shadow: var(--card-shadow);
-        overflow: hidden;
-    }
-    .table-container {
-        overflow-x: auto;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        text-align: left;
-    }
-    th {
-        background: #f1f5f9;
-        padding: 1rem;
-        font-weight: 600;
-        color: var(--text-muted);
-        font-size: 0.875rem;
-    }
-    td {
-        padding: 1rem;
-        border-bottom: 1px solid #e2e8f0;
-    }
     .stock-badge {
         padding: 0.25rem 0.5rem;
         border-radius: 4px;
@@ -43,14 +12,6 @@
     }
     .stock-in { color: #166534; background: #dcfce7; }
     .stock-low { color: #991b1b; background: #fee2e2; }
-    
-    @media (max-width: 600px) {
-        .section-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-    }
 </style>
 {% endblock %}
 
