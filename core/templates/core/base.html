@@ -226,15 +226,6 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <!-- Daily Truth Summary Sticky -->
-    <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; position: sticky; top: 58px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
-        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-sales" hx-trigger="load, truth-update from:body" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-cash" hx-trigger="load, truth-update from:body" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-debt" hx-trigger="load, truth-update from:body" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
-        </div>
-    </div>
-
     <nav>
         <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
             <a href="{% url 'core:dashboard' %}" class="logo">
@@ -269,6 +260,15 @@
             </div>
         </div>
     </nav>
+
+    <!-- Daily Truth Summary Sticky -->
+    <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; position: sticky; top: 56px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
+            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-sales" hx-trigger="load, truth-update from:body" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
+            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-cash" hx-trigger="load, truth-update from:body" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
+            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-debt" hx-trigger="load, truth-update from:body" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
+        </div>
+    </div>
 
     <main class="container">
         {% block content %}{% endblock %}
