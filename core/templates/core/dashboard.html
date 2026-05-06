@@ -177,18 +177,18 @@
             {% csrf_token %}
             <input type="text" name="smart_text" placeholder='Try typing "Rice 5k to Musa"'
                    style="flex: 1; min-width: 250px; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 2px solid #33ccff; font-size: 1rem; outline: none;" required>
-            <button type="submit" class="btn btn-primary" style="flex: 0 0 auto; min-width: 150px;">Quick Invoice</button>
+            <button type="submit" class="btn btn-primary smart-submit-btn">Quick Invoice</button>
         </form>
     </div>
 
     <div class="stats-grid">
         <div class="stat-card">
             <h3>Total Invoiced</h3>
-            <div class="value">₦{{ total_invoiced|default:"0.00" }}</div>
+            <div class="value truth-sales">₦{{ total_invoiced|default:"0.00" }}</div>
         </div>
         <div class="stat-card warning">
             <h3>Total Gbese (Debt)</h3>
-            <div class="value">₦{{ total_debt|default:"0.00" }}</div>
+            <div class="value truth-debt">₦{{ total_debt|default:"0.00" }}</div>
         </div>
         <div class="stat-card">
             <h3>Active Customers</h3>
