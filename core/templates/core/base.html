@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- PWA -->
     <link rel="manifest" href="/static/manifest.json">
@@ -17,6 +18,25 @@
     <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
 
     <style>
+        #htmx-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--secondary);
+            z-index: 9999;
+            display: none;
+        }
+        .htmx-request#htmx-indicator {
+            display: block;
+            animation: htmx-loading 2s linear infinite;
+        }
+        @keyframes htmx-loading {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
         :root {
             --primary: #070840; /* Brand Navy */
             --primary-dark: #050630;
@@ -244,6 +264,25 @@
             </div>
 
             <div class="nav-actions">
+                <!-- Notification Bell -->
+                <div class="relative mr-4" x-data="{ open: false }">
+                    <button @click="open = !open" class="text-white hover:text-secondary transition-colors relative">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span id="notif-badge" hx-get="{% url 'core:unread_notifications_count' %}" hx-trigger="load, every 30s" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"></span>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 z-[1100]">
+                        <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
+                            <div class="p-4 text-center">
+                                <span class="loading-spinner"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Sync Status -->
                 <div id="sync-status" title="All Data Cloud-Synced" style="width: 10px; height: 10px; background: #10B981; border-radius: 50%; margin-right: 1rem;"></div>
 
@@ -264,9 +303,9 @@
     <!-- Daily Truth Summary Sticky -->
     <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; position: sticky; top: 56px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
         <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-sales" hx-trigger="load, truth-update from:body" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-cash" hx-trigger="load, truth-update from:body" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
-            <div hx-get="{% url 'core:dashboard' %}" hx-select=".truth-debt" hx-trigger="load, truth-update from:body" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
+            <div id="truth-sales-sticky" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
+            <div id="truth-cash-sticky" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
+            <div id="truth-debt-sticky" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
         </div>
     </div>
 
