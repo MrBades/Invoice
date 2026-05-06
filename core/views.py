@@ -5,7 +5,7 @@ from django.template.loader import get_template
 import random
 import string
 from django.db.models import Sum, Count
-from .models import Invoice, Customer, Product, InvoiceItem
+from .models import Invoice, Customer, Product, InvoiceItem, Notification
 from .forms import InvoiceForm, CustomerForm, ProductForm
 from .utils import parse_smart_input
 from django.utils import timezone
@@ -50,6 +50,22 @@ def smart_input_processor(request):
                 unit_price=parsed_data['amount'],
                 total_price=parsed_data['amount']
             )
+
+            if request.headers.get('HX-Request'):
+                # Aggregated stats for OOB update
+                total_invoiced = Invoice.objects.aggregate(total=Sum('total_amount'))['total'] or 0
+                total_paid = Invoice.objects.aggregate(total=Sum('amount_paid'))['total'] or 0
+                total_debt = total_invoiced - total_paid
+
+                context = {
+                    'invoice': invoice,
+                    'total_invoiced': f"{total_invoiced:,.2f}",
+                    'total_debt': f"{total_debt:,.2f}",
+                    'total_sales_sum': f"{total_invoiced:,.0f}",
+                    'total_paid_sum': f"{total_paid:,.0f}",
+                    'total_debt_sum': f"{total_debt:,.0f}",
+                }
+                return render(request, 'core/fragments/invoice_row_oob.html', context)
 
             return redirect('core:invoice_detail', pk=invoice.pk)
 
@@ -333,3 +349,16 @@ def team_detail(request, member_slug):
         raise Http404("Team member profile not found.")
 
     return render(request, template_name)
+
+def unread_notifications_count(request):
+    count = Notification.objects.filter(is_read=False).count()
+    return HttpResponse(str(count) if count > 0 else "")
+
+def notification_list(request):
+    notifications = Notification.objects.all().order_by('-created_at')[:20]
+    # Mark as read when viewed? For simplicity let's just show them.
+    return render(request, 'core/notification_list.html', {'notifications': notifications})
+
+def mark_notifications_read(request):
+    Notification.objects.filter(is_read=False).update(is_read=True)
+    return HttpResponse("")

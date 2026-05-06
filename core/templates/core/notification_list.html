@@ -1,0 +1,21 @@
+<div class="card p-4" style="min-width: 300px;">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg">Notifications</h3>
+        <button hx-post="{% url 'core:mark_notifications_read' %}" hx-swap="none" hx-on::after-request="document.getElementById('notif-badge').innerText = ''" class="text-xs text-primary hover:underline">Mark all as read</button>
+    </div>
+    <div class="space-y-3">
+        {% for notif in notifications %}
+        <div class="p-3 rounded-lg {% if notif.type == 'Alert' %}bg-red-50 border-l-4 border-red-500{% elif notif.type == 'Warning' %}bg-yellow-50 border-l-4 border-yellow-500{% else %}bg-green-50 border-l-4 border-green-500{% endif %}">
+            <p class="text-sm font-medium">{{ notif.message }}</p>
+            <span class="text-xs text-gray-500">{{ notif.created_at|timesince }} ago</span>
+        </div>
+        {% empty %}
+        <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p class="mt-2 text-sm text-gray-500">All caught up! No new notifications.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>

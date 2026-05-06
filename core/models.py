@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Customer(models.Model):
     name = models.CharField(max_length=255)
@@ -123,3 +125,25 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Payment of {self.amount} for {self.invoice.invoice_number}"
+
+class Notification(models.Model):
+    TYPE_CHOICES = [
+        ('Success', 'Success'),
+        ('Warning', 'Warning'),
+        ('Alert', 'Alert'),
+    ]
+    message = models.TextField()
+    type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='Success')
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.message
+
+@receiver(post_save, sender=Product)
+def product_stock_alert(sender, instance, **kwargs):
+    if instance.stock_quantity < 5:
+        Notification.objects.create(
+            message=f"Low stock alert: {instance.name} has only {instance.stock_quantity} left.",
+            type='Alert'
+        )
