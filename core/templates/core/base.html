@@ -52,7 +52,8 @@
             --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
             --glass: rgba(255, 255, 255, 0.7);
             --blur: blur(10px);
-            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --transition: all 0.3s ease;
+            --nav-height: 70px;
         }
 
         * {
@@ -70,17 +71,23 @@
             display: flex;
             flex-direction: column;
             margin: 0;
-            padding-top: 0; /* Fix mobile gap */
+            padding-top: 0;
         }
 
         nav {
             background: var(--primary);
-            padding: 0.75rem 2rem;
+            padding: 0 2rem;
+            height: var(--nav-height);
             display: flex;
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             margin: 0;
+            transition: var(--transition);
+        }
+
+        header.shrunk nav {
+            height: 60px;
         }
 
         .logo {
@@ -111,7 +118,7 @@
         }
 
         .nav-links a:hover, .nav-links a.active {
-            color: var(--white);
+            color: var(--secondary);
         }
 
         .container {
@@ -301,7 +308,7 @@
 </head>
 <body>
     <div id="htmx-indicator"></div>
-    <header class="sticky top-0 z-[1000]">
+    <header class="fixed top-0 left-0 right-0 z-[1000] transition-all duration-300">
         <nav>
             <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
                 <a href="{% url 'core:dashboard' %}" class="logo">
@@ -330,7 +337,7 @@
                             <span id="notif-badge" hx-get="{% url 'core:unread_notifications_count' %}" hx-trigger="load, every 30s" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"></span>
                         </button>
 
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-[-4rem] sm:right-0 mt-2 z-[1100] w-[90vw] sm:w-80 max-w-sm">
+                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-[-1rem] sm:right-0 mt-2 z-[1100] w-[90vw] sm:w-80 max-w-sm shadow-2xl rounded-xl">
                             <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
                                 <div class="p-4 text-center">
                                     <span class="loading-spinner"></span>
@@ -366,7 +373,7 @@
         </div>
     </header>
 
-    <main class="container">
+    <main class="container" style="margin-top: calc(var(--nav-height) + 60px);">
         {% block content %}{% endblock %}
     </main>
 
@@ -381,6 +388,15 @@
                 navigator.serviceWorker.register('/service-worker.js');
             });
         }
+
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('header');
+            if (window.scrollY > 50) {
+                header.classList.add('shrunk');
+            } else {
+                header.classList.remove('shrunk');
+            }
+        });
 
         function toggleMobileMenu() {
             const navLinks = document.querySelector('.nav-links');
