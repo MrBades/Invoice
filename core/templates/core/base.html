@@ -80,6 +80,9 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
             margin: 0;
         }
 
@@ -243,70 +246,68 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
-    <header class="sticky top-0 z-[1000]">
-        <nav>
-            <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
-                <a href="{% url 'core:dashboard' %}" class="logo">
-                    <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
-                        <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
-                    </svg>
-                    <span>Yeedem Books</span>
-                </a>
+    <nav>
+        <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
+            <a href="{% url 'core:dashboard' %}" class="logo">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
+                    <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
+                </svg>
+                <span>Yeedem Books</span>
+            </a>
+            
+            <div class="nav-links">
+                <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
+                <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">Invoices</a>
+                <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">Customers</a>
+                <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}active{% endif %}">Products</a>
+            </div>
 
-                <div class="nav-links">
-                    <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
-                    <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">Invoices</a>
-                    <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">Customers</a>
-                    <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}active{% endif %}">Products</a>
-                </div>
+            <div class="nav-actions">
+                <!-- Notification Bell -->
+                <div class="relative mr-4" x-data="{ open: false }">
+                    <button @click="open = !open" class="text-white hover:text-secondary transition-colors relative">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                        </svg>
+                        <span id="notif-badge" hx-get="{% url 'core:unread_notifications_count' %}" hx-trigger="load, every 30s" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"></span>
+                    </button>
 
-                <div class="nav-actions">
-                    <!-- Notification Bell -->
-                    <div class="relative mr-4" x-data="{ open: false }">
-                        <button @click="open = !open" class="text-white hover:text-secondary transition-colors relative">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-                            </svg>
-                            <span id="notif-badge" hx-get="{% url 'core:unread_notifications_count' %}" hx-trigger="load, every 30s" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"></span>
-                        </button>
-
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-[-4rem] sm:right-0 mt-2 z-[1100] w-[90vw] sm:w-80 max-w-sm">
-                            <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
-                                <div class="p-4 text-center">
-                                    <span class="loading-spinner"></span>
-                                </div>
+                    <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 z-[1100]">
+                        <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
+                            <div class="p-4 text-center">
+                                <span class="loading-spinner"></span>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Sync Status -->
-                    <div id="sync-status" title="All Data Cloud-Synced" style="width: 10px; height: 10px; background: #10B981; border-radius: 50%; margin-right: 1rem;"></div>
-
-                    <a href="{% url 'core:invoice_create' %}" class="btn" style="background: var(--secondary); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
-                        <span>+</span> <span class="new-invoice-text">New Invoice</span>
-                    </a>
-                    <button class="mobile-toggle" aria-label="Toggle Menu" onclick="toggleMobileMenu()">
-                        <svg id="menu-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
                 </div>
-            </div>
-        </nav>
 
-        <!-- Daily Truth Summary -->
-        <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
-            <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
-                <div id="truth-sales-sticky" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
-                <div id="truth-cash-sticky" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
-                <div id="truth-debt-sticky" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
+                <!-- Sync Status -->
+                <div id="sync-status" title="All Data Cloud-Synced" style="width: 10px; height: 10px; background: #10B981; border-radius: 50%; margin-right: 1rem;"></div>
+
+                <a href="{% url 'core:invoice_create' %}" class="btn" style="background: var(--secondary); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
+                    <span>+</span> <span class="new-invoice-text">New Invoice</span>
+                </a>
+                <button class="mobile-toggle" aria-label="Toggle Menu" onclick="toggleMobileMenu()">
+                    <svg id="menu-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
             </div>
         </div>
-    </header>
+    </nav>
+
+    <!-- Daily Truth Summary Sticky -->
+    <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; position: sticky; top: 56px; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around;">
+            <div id="truth-sales-sticky" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
+            <div id="truth-cash-sticky" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
+            <div id="truth-debt-sticky" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
+        </div>
+    </div>
 
     <main class="container">
         {% block content %}{% endblock %}
