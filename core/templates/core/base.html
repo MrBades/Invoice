@@ -13,7 +13,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- PWA -->
-    <link rel="manifest" href="/static/manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#070840">
     <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
 
@@ -300,6 +300,7 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body>
+    <div id="htmx-indicator"></div>
     <header class="sticky top-0 z-[1000]">
         <nav>
             <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
@@ -380,9 +381,7 @@
                 navigator.serviceWorker.register('/service-worker.js');
             });
         }
-    </script>
 
-    <script>
         function toggleMobileMenu() {
             const navLinks = document.querySelector('.nav-links');
             navLinks.classList.toggle('active');

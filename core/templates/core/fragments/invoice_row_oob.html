@@ -1,40 +1,19 @@
-<tr class="animate-fade-in">
+<tr class="animate-fade-in" hx-swap-oob="afterbegin:#invoice-list-body">
     <td>
         <a href="{% url 'core:invoice_detail' invoice.pk %}" style="text-decoration: none; color: var(--primary); font-weight: 700;">
             {{ invoice.invoice_number }}
         </a>
     </td>
-    <td>
-        {{ invoice.customer.name }}
-        {% with avg_days=invoice.customer.average_days_to_pay %}
-            {% if avg_days != None %}
-                {% if avg_days < 7 %}
-                    <span title="Safe (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟢</span>
-                {% elif avg_days < 21 %}
-                    <span title="Warning (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟡</span>
-                {% else %}
-                    <span title="High Risk (Avg Pay: {{ avg_days|floatformat:0 }} days)">🔴</span>
-                {% endif %}
-            {% else %}
-                <span title="No payment history">⚪</span>
-            {% endif %}
-        {% endwith %}
-    </td>
+    <td>{{ invoice.customer.name }} ⚪</td>
     <td>{{ invoice.issue_date }}</td>
-    <td>₦{{ invoice.total_amount }}</td>
+    <td>₦{{ invoice.total_amount|floatformat:2 }}</td>
     <td>
-        <span class="badge {% if invoice.status == 'Paid' %}badge-success{% elif invoice.status == 'Overdue' %}badge-danger{% else %}badge-warning{% endif %}">
-            {{ invoice.status }}
-        </span>
+        <span class="badge badge-warning">Draft</span>
     </td>
-    <td>{{ invoice.nrs_irn|default:"Pending..." }}</td>
+    <td>Pending...</td>
 </tr>
 
-<div id="empty-row" hx-swap-oob="delete"></div>
-
-<div id="truth-sales-sticky" hx-swap-oob="true" class="truth-sales">Total Sales: ₦{{ total_sales_sum }}</div>
-<div id="truth-cash-sticky" hx-swap-oob="true" class="truth-cash">Cash Received: ₦{{ total_paid_sum }}</div>
-<div id="truth-debt-sticky" hx-swap-oob="true" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum }}</div>
-
+<div id="truth-sales-sticky" hx-swap-oob="true">Total Sales: ₦{{ total_sales_sum }}</div>
+<div id="truth-debt-sticky" hx-swap-oob="true">Outstanding Debt: ₦{{ total_debt_sum }}</div>
 <div id="truth-sales-card" hx-swap-oob="true" class="value truth-sales">₦{{ total_invoiced }}</div>
 <div id="truth-debt-card" hx-swap-oob="true" class="value truth-debt">₦{{ total_debt }}</div>

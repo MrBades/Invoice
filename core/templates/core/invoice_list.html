@@ -1,27 +1,15 @@
 {% extends 'core/base.html' %}
 
-{% block title %}All Invoices | Yeedem Books{% endblock %}
-
-{% block extra_head %}
-<style>
-    @media (max-width: 600px) {
-        .section-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-    }
-</style>
-{% endblock %}
+{% block title %}Invoices | Yeedem Books{% endblock %}
 
 {% block content %}
 <div class="animate-fade-in">
     <div class="section-header">
         <div>
             <h1>Invoices</h1>
-            <p class="text-muted">Manage all your customer billing here.</p>
+            <p class="text-muted">Manage all your billings and debt recovery.</p>
         </div>
-        <a href="{% url 'core:invoice_create' %}" class="btn" style="background: rgba(7, 8, 64, 0.2); color: var(--primary); border: 1px solid var(--primary); font-size: 0.85rem; padding: 0.4rem 0.8rem;">+ Create New Invoice</a>
+        <a href="{% url 'core:invoice_create' %}" class="btn btn-primary">+ New Invoice</a>
     </div>
 
     <div class="card">
@@ -34,36 +22,36 @@
                         <th>Date</th>
                         <th>Total Amount</th>
                         <th>Status</th>
-                        <th>FIRS Status</th>
+                        <th>NRS Clearance</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="invoice-list-body">
                     {% for invoice in invoices %}
                     <tr>
                         <td>
-                            <a href="{% url 'core:invoice_detail' invoice.pk %}" style="text-decoration: none; color: var(--primary); font-weight: 700;">
+                            <a href="{% url 'core:invoice_detail' invoice.pk %}" class="font-bold text-primary hover:underline">
                                 {{ invoice.invoice_number }}
                             </a>
                         </td>
-                        <td>{{ invoice.customer.name }}</td>
+                        <td class="font-medium text-gray-700">{{ invoice.customer.name }}</td>
                         <td>{{ invoice.issue_date }}</td>
-                        <td>₦{{ invoice.total_amount|floatformat:2 }}</td>
+                        <td class="font-bold">₦{{ invoice.total_amount|floatformat:2 }}</td>
                         <td>
                             <span class="badge {% if invoice.status == 'Paid' %}badge-success{% elif invoice.status == 'Overdue' %}badge-danger{% else %}badge-warning{% endif %}">
                                 {{ invoice.status }}
                             </span>
                         </td>
                         <td>
-                            <span class="badge {% if invoice.clearance_status == 'Success' %}badge-success{% else %}badge-warning{% endif %}">
-                                {{ invoice.clearance_status }}
-                            </span>
+                            {% if invoice.nrs_irn %}
+                                <span class="text-xs font-mono text-gray-500">{{ invoice.nrs_irn }}</span>
+                            {% else %}
+                                <a href="{% url 'core:clear_invoice_firs' invoice.pk %}" class="text-xs text-blue-500 hover:underline">Clear FIRS</a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 4rem;">
-                            <p class="text-muted">No invoices found.</p>
-                        </td>
+                        <td colspan="6" class="text-center py-12 text-gray-400 italic">No invoices found. Start by creating your first one.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

@@ -2,19 +2,6 @@
 
 {% block title %}Customers | Yeedem Books{% endblock %}
 
-{% block extra_head %}
-<style>
-    .score-badge {
-        padding: 0.25rem 0.5rem;
-        border-radius: 4px;
-        font-weight: 700;
-    }
-    .score-high { color: #166534; background: #dcfce7; }
-    .score-med { color: #854d0e; background: #fef9c3; }
-    .score-low { color: #991b1b; background: #fee2e2; }
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="animate-fade-in">
     <div class="section-header">
@@ -32,7 +19,7 @@
                     <tr>
                         <th>Name</th>
                         <th>Phone Number</th>
-                        <th>TIN</th>
+                        <th>Total Gbese</th>
                         <th>Trust Score</th>
                         <th>Actions</th>
                     </tr>
@@ -40,38 +27,31 @@
                 <tbody>
                     {% for customer in customers %}
                     <tr>
+                        <td class="font-bold text-primary">{{ customer.name }}</td>
+                        <td>{{ customer.phone_number }}</td>
+                        <td class="text-red-600 font-bold">₦{{ customer.total_debt|floatformat:2 }}</td>
                         <td>
-                            <strong>{{ customer.name }}</strong>
                             {% with avg_days=customer.average_days_to_pay %}
                                 {% if avg_days != None %}
                                     {% if avg_days < 7 %}
-                                        <span title="Safe (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟢</span>
+                                        <span class="badge badge-success">Excellent ({{ avg_days }}d)</span>
                                     {% elif avg_days < 21 %}
-                                        <span title="Warning (Avg Pay: {{ avg_days|floatformat:0 }} days)">🟡</span>
+                                        <span class="badge badge-warning">Fair ({{ avg_days }}d)</span>
                                     {% else %}
-                                        <span title="High Risk (Avg Pay: {{ avg_days|floatformat:0 }} days)">🔴</span>
+                                        <span class="badge badge-danger">High Risk ({{ avg_days }}d)</span>
                                     {% endif %}
                                 {% else %}
-                                    <span title="No payment history">⚪</span>
+                                    <span class="text-gray-400">New Customer</span>
                                 {% endif %}
                             {% endwith %}
                         </td>
-                        <td>{{ customer.phone_number }}</td>
-                        <td>{{ customer.tin|default:"-" }}</td>
                         <td>
-                            <span class="score-badge {% if customer.trust_score > 80 %}score-high{% elif customer.trust_score > 50 %}score-med{% else %}score-low{% endif %}">
-                                {{ customer.trust_score }}
-                            </span>
-                        </td>
-                        <td>
-                            <a href="{% url 'core:customer_edit' customer.pk %}" class="text-muted" style="font-size: 0.875rem; font-weight: 600; color: var(--primary);">Edit</a>
+                            <a href="{% url 'core:customer_edit' customer.pk %}" class="text-primary hover:underline font-bold">Edit</a>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" style="text-align: center; padding: 4rem;">
-                            <p class="text-muted">No customers found.</p>
-                        </td>
+                        <td colspan="5" class="text-center py-12 text-gray-400 italic">No customers registered yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

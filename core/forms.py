@@ -4,22 +4,16 @@ from .models import Invoice, Customer, Product
 class InvoiceForm(forms.ModelForm):
     class Meta:
         model = Invoice
-        fields = ['customer', 'issue_date', 'expected_pay_date', 'subtotal', 'status', 'is_gbese', 'draft_image', 'voice_record']
+        fields = ['customer', 'issue_date', 'expected_pay_date', 'subtotal', 'amount_paid', 'status']
         widgets = {
             'issue_date': forms.DateInput(attrs={'type': 'date'}),
             'expected_pay_date': forms.DateInput(attrs={'type': 'date'}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if not self.instance.pk and not self.initial.get('issue_date'):
-            from django.utils import timezone
-            self.initial['issue_date'] = timezone.now().date()
-
 class CustomerForm(forms.ModelForm):
     class Meta:
         model = Customer
-        fields = ['name', 'phone_number', 'email', 'tin']
+        fields = ['name', 'phone_number', 'email', 'address', 'tin']
 
 class ProductForm(forms.ModelForm):
     class Meta:

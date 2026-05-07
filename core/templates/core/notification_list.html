@@ -1,20 +1,17 @@
-<div class="card p-4">
+<div class="p-4 bg-white">
     <div class="flex justify-between items-center mb-4">
         <h3 class="font-bold text-lg">Notifications</h3>
-        <button hx-post="{% url 'core:mark_notifications_read' %}" hx-swap="none" hx-on::after-request="document.getElementById('notif-badge').innerText = ''" class="text-xs text-primary hover:underline">Mark all as read</button>
+        <button hx-post="{% url 'core:mark_notifications_read' %}" hx-target="#notif-badge" hx-swap="outerHTML" class="text-xs text-blue-500 hover:underline">Mark all as read</button>
     </div>
-    <div class="space-y-3">
+    <div class="space-y-3 max-h-96 overflow-y-auto">
         {% for notif in notifications %}
-        <div class="p-3 rounded-lg {% if notif.type == 'Alert' %}bg-red-50 border-l-4 border-red-500{% elif notif.type == 'Warning' %}bg-yellow-50 border-l-4 border-yellow-500{% else %}bg-green-50 border-l-4 border-green-500{% endif %}">
-            <p class="text-sm font-medium">{{ notif.message }}</p>
-            <span class="text-xs text-gray-500">{{ notif.created_at|timesince }} ago</span>
+        <div class="p-3 rounded-lg {% if not notif.is_read %}bg-blue-50 border-l-4 border-blue-500{% else %}bg-gray-50{% endif %} transition-colors">
+            <p class="text-sm font-medium text-gray-800">{{ notif.message }}</p>
+            <span class="text-[10px] text-gray-500">{{ notif.created_at|timesince }} ago</span>
         </div>
         {% empty %}
-        <div class="text-center py-8">
-            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-            </svg>
-            <p class="mt-2 text-sm text-gray-500">All caught up! No new notifications.</p>
+        <div class="text-center py-6 text-gray-400">
+            <p>No notifications yet</p>
         </div>
         {% endfor %}
     </div>
