@@ -28,5 +28,6 @@ venv/
 htmlcov/
 *.log
 *.png
+!static/logo.png
 *.html
 !core/templates/**/*.html
