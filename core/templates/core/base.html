@@ -86,9 +86,6 @@
             transition: var(--transition);
         }
 
-        header.shrunk nav {
-            height: 60px;
-        }
 
         .logo {
             font-size: 1.25rem;
@@ -461,7 +458,7 @@
 
     <footer>
         <p>&copy; 2026 Yeedem Books. Optimized for MSMEs. Nigerian FIRS 2026 Compliant.</p>
-        <p class="mt-2 text-xs"><a href="https://yeedem.com/#team" target="_blank" class="hover:text-secondary transition-colors">Yeedem Tech</a></p>
+        <p class="mt-2 text-xs">A product of <a href="https://yeedem.com" target="_blank" class="font-bold hover:text-secondary transition-colors">Yeedem Tech</a></p>
     </footer>
 
     <script>
@@ -471,14 +468,6 @@
             });
         }
 
-        window.addEventListener('scroll', function() {
-            const header = document.querySelector('header');
-            if (window.scrollY > 50) {
-                header.classList.add('shrunk');
-            } else {
-                header.classList.remove('shrunk');
-            }
-        });
 
         function toggleMobileMenu() {
             const navLinks = document.querySelector('.nav-links');

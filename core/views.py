@@ -326,21 +326,6 @@ def product_edit(request, pk):
         form = ProductForm(instance=product)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Product: {product.name}'})
 
-def team(request):
-    return render(request, 'core/team.html')
-
-def team_detail(request, member_slug):
-    from django.template import TemplateDoesNotExist
-    from django.http import Http404
-
-    template_name = f'core/team_{member_slug.replace("-", "_")}.html'
-    try:
-        get_template(template_name)
-    except TemplateDoesNotExist:
-        raise Http404("Team member profile not found.")
-
-    return render(request, template_name)
-
 def unread_notifications_count(request):
     count = Notification.objects.filter(is_read=False).count()
     return HttpResponse(str(count) if count > 0 else "")

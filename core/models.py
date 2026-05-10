@@ -24,11 +24,13 @@ class Customer(models.Model):
 
     @property
     def average_days_to_pay(self):
-        # Mock calculation for Nigerian MSME trust score
-        paid_invoices = self.invoice_set.filter(status='Paid')
-        if not paid_invoices:
+        # In a real system, we would calculate this based on (payment_date - issue_date).
+        # Since we don't have a payment_date field yet, we use a deterministic
+        # calculation based on the ID to provide a consistent 'Trust Score' for the demo.
+        paid_invoices_count = self.invoice_set.filter(status='Paid').count()
+        if paid_invoices_count == 0:
             return None
-        return random.randint(3, 25) # Mocking for demo
+        return (self.id * 3) % 21 + 4
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
