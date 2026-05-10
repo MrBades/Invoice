@@ -387,7 +387,7 @@
 </head>
 <body>
     <div id="htmx-indicator"></div>
-    <header class="fixed top-0 left-0 right-0 z-[1000] transition-all duration-300">
+    <header class="fixed top-0 left-0 right-0 z-[1000]">
         <nav>
             <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
                 <a href="{% url 'core:dashboard' %}" class="logo">
@@ -441,18 +441,9 @@
                 </div>
             </div>
         </nav>
-
-        <!-- Daily Truth Summary -->
-        <div style="background: var(--secondary); color: var(--primary); padding: 0.5rem 1rem; z-index: 99; box-shadow: 0 2px 4px rgba(0,0,0,0.1); font-weight: 800; font-size: 0.85rem;">
-            <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 0.5rem; text-align: center;">
-                <div id="truth-sales-sticky" class="truth-sales">Total Sales: ₦{{ total_sales_sum|default:"0" }}</div>
-                <div id="truth-cash-sticky" class="truth-cash">Cash Received: ₦{{ total_paid_sum|default:"0" }}</div>
-                <div id="truth-debt-sticky" class="truth-debt">Outstanding Debt: ₦{{ total_debt_sum|default:"0" }}</div>
-            </div>
-        </div>
     </header>
 
-    <main class="container" style="margin-top: calc(var(--nav-height) + 60px);">
+    <main class="container" style="margin-top: var(--nav-height);">
         {% block content %}{% endblock %}
     </main>
 
