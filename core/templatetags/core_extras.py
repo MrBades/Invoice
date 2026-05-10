@@ -8,3 +8,10 @@ def subtract(value, arg):
         return value - arg
     except:
         return 0
+
+@register.filter
+def multiply(value, arg):
+    try:
+        return value * arg
+    except:
+        return 0

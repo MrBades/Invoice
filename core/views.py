@@ -32,13 +32,11 @@ def smart_input_processor(request):
                     wholesale_price=parsed_data['amount'],
                 )
 
-            # Create Invoice
+            # Create Invoice (Logic for VAT/Total now handled in Invoice.save())
             invoice = Invoice.objects.create(
                 customer=customer,
                 issue_date=timezone.now().date(),
                 subtotal=parsed_data['amount'],
-                vat_amount=parsed_data['amount'] * Decimal('0.075'),
-                total_amount=parsed_data['amount'] * Decimal('1.075'),
                 status='Draft'
             )
 
@@ -139,11 +137,7 @@ def invoice_create(request):
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request.FILES)
         if form.is_valid():
-            invoice = form.save(commit=False)
-            # Auto-calculate VAT (7.5%) as per Nigerian standards
-            invoice.vat_amount = float(invoice.subtotal) * 0.075
-            invoice.total_amount = float(invoice.subtotal) + invoice.vat_amount
-            invoice.save()
+            invoice = form.save() # Calculation handled in models.py
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm()
@@ -159,10 +153,7 @@ def invoice_edit(request, pk):
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request.FILES, instance=invoice)
         if form.is_valid():
-            invoice = form.save(commit=False)
-            invoice.vat_amount = float(invoice.subtotal) * 0.075
-            invoice.total_amount = float(invoice.subtotal) + invoice.vat_amount
-            invoice.save()
+            invoice = form.save() # Calculation handled in models.py
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm(instance=invoice)

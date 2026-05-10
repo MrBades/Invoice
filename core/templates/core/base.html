@@ -117,7 +117,7 @@
             transition: var(--transition);
         }
 
-        .nav-links a:hover, .nav-links a.active {
+        .nav-links a:hover, .nav-links a.nav-link-active {
             color: var(--secondary);
         }
 
@@ -161,6 +161,88 @@
             margin-bottom: 2rem;
             flex-wrap: wrap;
             gap: 1rem;
+            transition: var(--transition);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            backdrop-filter: var(--blur);
+            padding: 2rem;
+            border-radius: 1.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px) rotate(1deg);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .stat-card .value {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            background: linear-gradient(135deg, var(--text-dark), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stat-card.warning::before {
+            background: var(--secondary);
+        }
+
+        .stat-card .icon-bg {
+            position: absolute;
+            right: -10px;
+            bottom: -10px;
+            font-size: 5rem;
+            opacity: 0.05;
+            transform: rotate(-15deg);
+        }
+
+        .empty-state {
+            padding: 6rem 2rem;
+            text-align: center;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 640px) {
+            .stat-card {
+                padding: 1.5rem;
+            }
+            main .btn {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         .card {
@@ -256,7 +338,7 @@
                 padding: 1rem 0;
                 order: 3;
             }
-            .nav-links.active {
+            .nav-links.mobile-active {
                 display: flex;
                 background: var(--primary);
                 position: absolute;
@@ -268,7 +350,7 @@
                 border-top: 1px solid rgba(255, 255, 255, 0.1);
                 z-index: 101;
             }
-            .nav-links.active a {
+            .nav-links.mobile-active a {
                 color: var(--white);
                 padding: 0.75rem 0;
                 font-size: 1.1rem;
@@ -320,10 +402,10 @@
                 </a>
 
                 <div class="nav-links">
-                    <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">Dashboard</a>
-                    <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}active{% endif %}">Invoices</a>
-                    <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}active{% endif %}">Customers</a>
-                    <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}active{% endif %}">Products</a>
+                    <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}nav-link-active{% endif %}">Dashboard</a>
+                    <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}nav-link-active{% endif %}">Invoices</a>
+                    <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}nav-link-active{% endif %}">Customers</a>
+                    <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}nav-link-active{% endif %}">Products</a>
                 </div>
 
                 <div class="nav-actions">
@@ -400,11 +482,11 @@
 
         function toggleMobileMenu() {
             const navLinks = document.querySelector('.nav-links');
-            navLinks.classList.toggle('active');
+            navLinks.classList.toggle('mobile-active');
             
             // Toggle icon between hamburger and X
             const icon = document.getElementById('menu-icon');
-            if (navLinks.classList.contains('active')) {
+            if (navLinks.classList.contains('mobile-active')) {
                 icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>';
             } else {
                 icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>';

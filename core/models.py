@@ -76,6 +76,13 @@ class Invoice(models.Model):
                 new_num = 1
             self.invoice_number = f"YB-{year}-{new_num:04d}"
 
+        # Ensure subtotal is Decimal
+        self.subtotal = Decimal(str(self.subtotal))
+
+        # Auto-calculate VAT (7.5%) and Total
+        self.vat_amount = self.subtotal * Decimal('0.075')
+        self.total_amount = self.subtotal + self.vat_amount
+
         # Auto-mark as Gbese if not fully paid
         self.is_gbese = self.amount_paid < self.total_amount
 
