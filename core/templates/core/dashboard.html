@@ -3,30 +3,28 @@
 {% block title %}Dashboard | Yeedem Books{% endblock %}
 
 {% block extra_head %}
-<style>
-    @media (max-width: 640px) {
-        .smart-input-form {
-            flex-direction: column;
-        }
-        .smart-input-form input, .smart-input-form button {
-            width: 100% !important;
-            flex: none !important;
-        }
-    }
-
-    .smart-input-form input:focus {
-        border-color: var(--primary) !important;
-        box-shadow: 0 0 0 4px rgba(7, 8, 64, 0.1);
-    }
-</style>
 {% endblock %}
 
 {% block content %}
 <div class="animate-fade-in">
+    {% if is_guest %}
+    <div class="card p-6 mb-8" style="background: var(--primary); color: white; border: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
+        <div>
+            <h2 class="text-xl font-bold" style="color: var(--secondary);">✨ Guest Mode Active</h2>
+            <p class="opacity-80">You can create 2 trial invoices. Create an account to save them forever!</p>
+        </div>
+        <a href="{% url 'core:signup' %}" class="btn" style="background: var(--secondary); color: var(--primary); font-weight: 800;">Create Free Account</a>
+    </div>
+    {% endif %}
     <div class="section-header">
         <div>
             <h1>Business Overview</h1>
             <p class="text-muted">Welcome back, here's what's happening today.</p>
+        </div>
+        <div class="flex gap-4">
+            <a href="{% url 'core:onboarding' %}" class="btn" style="background: rgba(51, 204, 255, 0.1); color: var(--secondary); border: 1px solid var(--secondary);">
+                <span>✨</span> Start Guided Setup with YB AI
+            </a>
         </div>
     </div>
 

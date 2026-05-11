@@ -7,6 +7,7 @@ from django.views.generic import TemplateView
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("core.urls")),
+    path('accounts/', include('django.contrib.auth.urls')),
     path('manifest.json', TemplateView.as_view(template_name='static/manifest.json', content_type='application/json')),
     path('service-worker.js', TemplateView.as_view(template_name='static/service-worker.js', content_type='application/javascript')),
 ]

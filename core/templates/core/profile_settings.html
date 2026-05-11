@@ -1,0 +1,106 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Profile Settings | Yeedem Books{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto animate-fade-in">
+    <div class="section-header">
+        <div>
+            <h1>Profile & Business Settings</h1>
+            <p class="text-muted">Manage your personal and business identity.</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Sidebar Info -->
+        <div class="space-y-6">
+            <div class="card p-6 text-center">
+                <div class="w-32 h-32 mx-auto rounded-full overflow-hidden border-4 border-secondary shadow-lg mb-4 bg-gray-100 flex items-center justify-center">
+                    {% if user.profile.profile_picture %}
+                        <img src="{{ user.profile.profile_picture.url }}" class="w-full h-full object-cover">
+                    {% else %}
+                        <span class="text-4xl text-gray-400">👤</span>
+                    {% endif %}
+                </div>
+                <h3 class="font-extrabold text-primary text-xl">{{ user.username }}</h3>
+                <p class="text-sm text-muted mb-4">{{ user.email }}</p>
+                <div class="pt-4 border-t border-gray-100">
+                    <p class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Business</p>
+                    <p class="font-bold text-primary">{{ user.profile.business_name|default:"Not Set" }}</p>
+                </div>
+            </div>
+
+            <div class="card p-6 bg-primary text-white">
+                <h3 class="text-xs font-bold text-blue-300 uppercase tracking-widest mb-4">Account Security</h3>
+                <p class="text-sm opacity-80 mb-4">Your account is secured with end-to-end encryption for all financial records.</p>
+                <div class="space-y-3">
+                    <button class="btn btn-primary w-full justify-center" style="background: rgba(255,255,255,0.1);">Change Password</button>
+                    <form action="{% url 'logout' %}" method="post" style="display: block;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn w-full justify-center text-red-300 hover:text-white" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.2);">Logout Session</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Form -->
+        <div class="md:col-span-2">
+            <div class="card p-8">
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-xl bg-green-50 text-green-700 font-bold border border-green-100 animate-fade-in">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <form method="post" enctype="multipart/form-data" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label>Business Name</label>
+                            {{ form.business_name }}
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            {{ form.phone_number }}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Business Address</label>
+                        {{ form.address }}
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tax ID (TIN)</label>
+                        {{ form.tin }}
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div class="form-group">
+                            <label>Profile Picture</label>
+                            <div class="mt-1 flex items-center gap-4">
+                                {{ form.profile_picture }}
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Business Logo (for Invoices)</label>
+                            <div class="mt-1 flex items-center gap-4">
+                                {{ form.logo }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-gray-100">
+                        <button type="submit" class="btn btn-primary w-full sm:w-auto px-12 justify-center">Save All Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

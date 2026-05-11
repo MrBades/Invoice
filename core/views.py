@@ -1,15 +1,60 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 import urllib.parse
 from django.http import HttpResponse
 from django.template.loader import get_template
 import random
 import string
 from django.db.models import Sum, Count
-from .models import Invoice, Customer, Product, InvoiceItem, Notification
-from .forms import InvoiceForm, CustomerForm, ProductForm
+from .models import Invoice, Customer, Product, InvoiceItem, Notification, Profile
+from .forms import InvoiceForm, CustomerForm, ProductForm, ProfileForm
 from .utils import parse_smart_input
 from django.utils import timezone
 from decimal import Decimal
+from django.contrib import messages
+
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+
+def signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            
+            # Transfer guest invoices
+            guest_ids = request.session.get('guest_invoice_ids', [])
+            if guest_ids:
+                Invoice.objects.filter(id__in=guest_ids).update(user=user)
+                # Also link customers if any were created as guest
+                Customer.objects.filter(invoice__id__in=guest_ids).update(user=user)
+                # And products
+                Product.objects.filter(invoiceitem__invoice__id__in=guest_ids).update(user=user)
+                
+                # Clear session
+                del request.session['guest_invoice_ids']
+                return redirect('core:dashboard') # Skip onboarding if they already made invoices
+
+            return redirect('core:onboarding')
+    else:
+        form = UserCreationForm()
+    return render(request, 'registration/signup.html', {'form': form})
+
+@login_required
+def profile_settings(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Profile updated successfully!")
+            return redirect('core:profile_settings')
+    else:
+        form = ProfileForm(instance=profile)
+    
+    return render(request, 'core/profile_settings.html', {'form': form})
 
 def smart_input_processor(request):
     if request.method == 'POST':
@@ -17,28 +62,47 @@ def smart_input_processor(request):
         parsed_data = parse_smart_input(smart_text)
 
         if parsed_data:
+            # Check guest limit
+            if not request.user.is_authenticated:
+                guest_ids = request.session.get('guest_invoice_ids', [])
+                if len(guest_ids) >= 2:
+                    if request.headers.get('HX-Request'):
+                        return HttpResponse('<div class="p-4 bg-red-100 text-red-700 rounded-xl">Guest limit reached. Please sign up to continue!</div>')
+                    return redirect('core:signup')
+
             # Try to find customer
+            cust_filter = {'user': request.user} if request.user.is_authenticated else {'user__isnull': True}
             customer, _ = Customer.objects.get_or_create(
                 name=parsed_data['customer_name'],
+                **cust_filter,
                 defaults={'phone_number': '00000000000'} # Placeholder
             )
 
             # Try to find product
-            product = Product.objects.filter(name__icontains=parsed_data['product_name']).first()
+            prod_filter = {'user': request.user} if request.user.is_authenticated else {'user__isnull': True}
+            product = Product.objects.filter(name__icontains=parsed_data['product_name'], **prod_filter).first()
             if not product:
                 product = Product.objects.create(
                     name=parsed_data['product_name'],
                     retail_price=parsed_data['amount'],
                     wholesale_price=parsed_data['amount'],
+                    **prod_filter
                 )
 
-            # Create Invoice (Logic for VAT/Total now handled in Invoice.save())
+            # Create Invoice
             invoice = Invoice.objects.create(
+                user=request.user if request.user.is_authenticated else None,
                 customer=customer,
                 issue_date=timezone.now().date(),
                 subtotal=parsed_data['amount'],
                 status='Draft'
             )
+
+            # Track for guests
+            if not request.user.is_authenticated:
+                guest_ids = request.session.get('guest_invoice_ids', [])
+                guest_ids.append(invoice.id)
+                request.session['guest_invoice_ids'] = guest_ids
 
             # Create Invoice Item
             InvoiceItem.objects.create(
@@ -70,19 +134,27 @@ def smart_input_processor(request):
     return redirect('core:dashboard')
 
 def dashboard(request):
+    if request.user.is_authenticated:
+        invoices = Invoice.objects.filter(user=request.user)
+        customers = Customer.objects.filter(user=request.user)
+    else:
+        guest_ids = request.session.get('guest_invoice_ids', [])
+        invoices = Invoice.objects.filter(id__in=guest_ids)
+        customers = Customer.objects.none() # Guests don't see customer list usually
+
     # Aggregated stats
-    total_invoiced = Invoice.objects.aggregate(total=Sum('total_amount'))['total'] or 0
-    total_paid = Invoice.objects.aggregate(total=Sum('amount_paid'))['total'] or 0
+    total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_paid = invoices.aggregate(total=Sum('amount_paid'))['total'] or 0
     total_debt = total_invoiced - total_paid
     
-    customer_count = Customer.objects.count()
+    customer_count = customers.count() if request.user.is_authenticated else 0
     
     # FIRS Clearance Rate
-    total_invoices = Invoice.objects.count()
-    cleared_invoices = Invoice.objects.filter(clearance_status='Success').count()
-    clearance_rate = (cleared_invoices / total_invoices * 100) if total_invoices > 0 else 0
+    total_invoices_count = invoices.count()
+    cleared_invoices = invoices.filter(clearance_status='Success').count()
+    clearance_rate = (cleared_invoices / total_invoices_count * 100) if total_invoices_count > 0 else 0
     
-    recent_invoices = Invoice.objects.all().order_by('-created_at')[:5]
+    recent_invoices = invoices.order_by('-created_at')[:5]
     
     context = {
         'total_invoiced': f"{total_invoiced:,.2f}",
@@ -93,6 +165,7 @@ def dashboard(request):
         'customer_count': customer_count,
         'clearance_rate': round(clearance_rate, 1),
         'recent_invoices': recent_invoices,
+        'is_guest': not request.user.is_authenticated,
     }
     
     return render(request, 'core/dashboard.html', context)
@@ -338,3 +411,27 @@ def notification_list(request):
 def mark_notifications_read(request):
     Notification.objects.filter(is_read=False).update(is_read=True)
     return HttpResponse("")
+
+def onboarding(request):
+    step = request.GET.get('step', 'welcome')
+    
+    if request.method == 'POST':
+        next_steps = {
+            'welcome': 'business_name',
+            'business_name': 'industry',
+            'industry': 'complete'
+        }
+        step = next_steps.get(step, 'complete')
+        
+        if step == 'complete':
+            if request.headers.get('HX-Request'):
+                response = HttpResponse("")
+                response['HX-Redirect'] = reverse('core:dashboard')
+                return response
+            return redirect('core:dashboard')
+
+    context = {'step': step}
+    if request.headers.get('HX-Request'):
+        return render(request, f'core/fragments/onboarding_{step}.html', context)
+    
+    return render(request, 'core/onboarding.html', context)

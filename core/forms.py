@@ -1,5 +1,13 @@
 from django import forms
-from .models import Invoice, Customer, Product
+from .models import Invoice, Customer, Product, Profile
+
+class ProfileForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = ['business_name', 'phone_number', 'address', 'tin', 'profile_picture', 'logo']
+        widgets = {
+            'address': forms.Textarea(attrs={'rows': 3}),
+        }
 
 class InvoiceForm(forms.ModelForm):
     class Meta:

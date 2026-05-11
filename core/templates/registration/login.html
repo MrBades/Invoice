@@ -1,0 +1,54 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Login | Yeedem Books{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto animate-fade-in py-12">
+    <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-primary mb-6 shadow-2xl">
+            <svg width="40" height="40" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
+                <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
+            </svg>
+        </div>
+        <h1 class="text-3xl font-extrabold text-primary">Welcome Back</h1>
+        <p class="text-muted mt-2">Sign in to manage your business records</p>
+    </div>
+
+    <div class="card p-8">
+        {% if form.errors %}
+        <div class="mb-6 p-4 rounded-xl bg-red-50 text-red-700 text-sm font-bold border border-red-100">
+            Invalid username or password. Please try again.
+        </div>
+        {% endif %}
+
+        <form method="post" action="{% url 'login' %}" class="space-y-6">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" required 
+                       class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all"
+                       placeholder="Enter your username">
+            </div>
+
+            <div class="form-group">
+                <label for="id_password">Password</label>
+                <input type="password" name="password" id="id_password" required 
+                       class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all"
+                       placeholder="••••••••">
+            </div>
+
+            <button type="submit" class="btn btn-primary w-full justify-center py-4 text-lg">
+                Sign In to Yeedem
+            </button>
+
+            <input type="hidden" name="next" value="{{ next }}">
+        </form>
+
+        <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+            <p class="text-sm text-muted">Don't have an account? <a href="{% url 'core:signup' %}" class="font-bold text-primary hover:text-secondary">Create one now</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

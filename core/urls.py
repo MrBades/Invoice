@@ -25,4 +25,7 @@ urlpatterns = [
     path('notifications/unread-count/', views.unread_notifications_count, name='unread_notifications_count'),
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/mark-read/', views.mark_notifications_read, name='mark_notifications_read'),
+    path('onboarding/', views.onboarding, name='onboarding'),
+    path('profile/', views.profile_settings, name='profile_settings'),
+    path('signup/', views.signup, name='signup'),
 ]

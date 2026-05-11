@@ -4,8 +4,12 @@ import random
 import string
 from django.utils import timezone
 from decimal import Decimal
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 class Customer(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
     phone_number = models.CharField(max_length=20)
     email = models.EmailField(blank=True, null=True)
@@ -33,6 +37,7 @@ class Customer(models.Model):
         return (self.id * 3) % 21 + 4
 
 class Product(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     retail_price = models.DecimalField(max_digits=12, decimal_places=2)
@@ -45,6 +50,7 @@ class Product(models.Model):
         return self.name
 
 class Invoice(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     STATUS_CHOICES = [
         ('Draft', 'Draft'),
         ('Cleared', 'Cleared'),
@@ -111,3 +117,23 @@ class Notification(models.Model):
 
     def __str__(self):
         return self.message[:50]
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    business_name = models.CharField(max_length=255, blank=True)
+    logo = models.ImageField(upload_to='logos/', blank=True, null=True)
+    profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
+    phone_number = models.CharField(max_length=20, blank=True)
+    address = models.TextField(blank=True)
+    tin = models.CharField(max_length=50, blank=True, verbose_name="Tax Identification Number")
+
+    def __str__(self):
+        return f"Profile for {self.user.username}"
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    if created:
+        Profile.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    instance.profile.save()

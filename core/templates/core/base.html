@@ -7,7 +7,7 @@
     <title>{% block title %}Yeedem Books{% endblock %}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -38,21 +38,20 @@
         }
 
         :root {
-            --primary: #070840; /* Brand Navy */
-            --primary-dark: #050630;
+            --primary: #070840; /* Strict Yeedem Navy */
+            --primary-dark: #040520;
             --primary-light: #1c3a6b;
-            --secondary: #33ccff; /* Brand Cyan */
-            --accent: #F59E0B; /* Sunset Orange */
-            --success: #10B981; /* Emerald */
-            --background: #F9FAFB;
+            --secondary: #33ccff; /* Strict Yeedem Cyan */
+            --accent: #FFD700; 
+            --success: #10B981; 
+            --background: #F8FAFC;
             --surface: #FFFFFF;
-            --text-dark: #0f172a;
-            --text-muted: #475569;
+            --text-dark: #070840;
+            --text-muted: #64748B;
             --white: #ffffff;
-            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.02);
-            --glass: rgba(255, 255, 255, 0.7);
-            --blur: blur(10px);
-            --transition: all 0.3s ease;
+            --card-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+            --glass: rgba(255, 255, 255, 0.95);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             --nav-height: 70px;
         }
 
@@ -60,18 +59,16 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Open Sans', 'Inter', sans-serif;
+            font-family: 'Open Sans', sans-serif;
         }
 
         body {
-            background: radial-gradient(circle at top left, #f0f4f8, #e2e8f0);
+            background: #F8FAFC;
             color: var(--text-dark);
             line-height: 1.6;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            margin: 0;
-            padding-top: 0;
         }
 
         nav {
@@ -243,12 +240,17 @@
         }
 
         .card {
-            background: var(--glass);
-            backdrop-filter: var(--blur);
-            border-radius: 1.5rem;
+            background: var(--surface);
+            border-radius: 2rem;
             box-shadow: var(--card-shadow);
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.08);
         }
 
         .badge {
@@ -382,13 +384,138 @@
                 display: inline;
             }
         }
+        .loading-spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: var(--secondary);
+            animation: spin 1s ease-in-out infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Smart Input Bar Symmetry */
+        @media (max-width: 640px) {
+            .smart-input-form {
+                flex-direction: column;
+            }
+            .smart-input-form input, .smart-input-form button {
+                width: 100% !important;
+                flex: none !important;
+            }
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 4px rgba(7, 8, 64, 0.1);
+        }
+
+        /* Standard Form Components */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        .form-group label {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 0.75rem;
+            border: 2px solid #e2e8f0;
+            font-size: 1rem;
+            transition: var(--transition);
+            outline: none;
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 4px rgba(51, 204, 255, 0.1);
+        }
+
+        .daily-truth-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            padding: 0.75rem 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+            font-size: 0.85rem;
+            font-weight: 800;
+            position: sticky;
+            top: 60px;
+            z-index: 900;
+            transition: var(--transition);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        
+        .daily-truth-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .daily-truth-label {
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .daily-truth-value {
+            color: var(--primary);
+        }
+
+        @media (max-width: 640px) {
+            .daily-truth-bar {
+                gap: 1rem;
+                font-size: 0.65rem;
+                top: 60px;
+                padding: 0.5rem;
+            }
+            .notification-dropdown {
+                position: fixed !important;
+                top: 80px !important;
+                left: 5% !important;
+                right: 5% !important;
+                width: 90% !important;
+                max-width: none !important;
+                z-index: 2000 !important;
+                border-radius: 1.5rem !important;
+            }
+        }
+
+        /* Mobile Symmetry */
+        @media (max-width: 640px) {
+            .smart-input-form {
+                flex-direction: column !important;
+                width: 100% !important;
+            }
+            .smart-input-form input {
+                width: 100% !important;
+                min-width: 100% !important;
+            }
+            .smart-submit-btn {
+                width: 100% !important;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body>
+<body hx-boost="true">
     <div id="htmx-indicator"></div>
-    <header class="fixed top-0 left-0 right-0 z-[1000]">
-        <nav>
+    <header id="main-header" class="fixed top-0 left-0 right-0 z-[1000] transition-all duration-300">
+        <nav class="transition-all duration-300">
             <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
                 <a href="{% url 'core:dashboard' %}" class="logo">
                     <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -399,13 +526,23 @@
                 </a>
 
                 <div class="nav-links">
+                    {% if user.is_authenticated %}
                     <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}nav-link-active{% endif %}">Dashboard</a>
                     <a href="{% url 'core:invoice_list' %}" class="{% if 'invoice' in request.resolver_match.url_name %}nav-link-active{% endif %}">Invoices</a>
                     <a href="{% url 'core:customer_list' %}" class="{% if 'customer' in request.resolver_match.url_name %}nav-link-active{% endif %}">Customers</a>
-                    <a href="{% url 'core:product_list' %}" class="{% if 'product' in request.resolver_match.url_name %}nav-link-active{% endif %}">Products</a>
+                    <a href="{% url 'core:profile_settings' %}" class="{% if request.resolver_match.url_name == 'profile_settings' %}nav-link-active{% endif %}">Profile</a>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-link" style="background: none; border: none; cursor: pointer; color: #ff6b6b; font-weight: 800;">Logout</button>
+                    </form>
+                    {% else %}
+                    <a href="{% url 'login' %}" class="nav-link">Login</a>
+                    <a href="{% url 'core:signup' %}" class="nav-link">Sign Up</a>
+                    {% endif %}
                 </div>
 
                 <div class="nav-actions">
+                    {% if user.is_authenticated %}
                     <!-- Notification Bell -->
                     <div class="relative mr-4" x-data="{ open: false }">
                         <button @click="open = !open" class="text-white hover:text-secondary transition-colors relative">
@@ -416,8 +553,17 @@
                             <span id="notif-badge" hx-get="{% url 'core:unread_notifications_count' %}" hx-trigger="load, every 30s" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center"></span>
                         </button>
 
-                        <div x-show="open" @click.away="open = false" x-transition class="absolute right-[-1rem] sm:right-0 mt-2 z-[1100] w-[90vw] sm:w-80 max-w-sm shadow-2xl rounded-xl">
-                            <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white rounded-xl shadow-2xl overflow-hidden border border-gray-100">
+                        <!-- Notification Dropdown -->
+                        <div x-show="open" @click.away="open = false" 
+                             x-transition:enter="transition ease-out duration-200" 
+                             x-transition:enter-start="opacity-0 scale-95" 
+                             x-transition:enter-end="opacity-100 scale-100" 
+                             x-transition:leave="transition ease-in duration-75" 
+                             x-transition:leave-start="opacity-100 scale-100" 
+                             x-transition:leave-end="opacity-0 scale-95" 
+                             class="absolute right-0 sm:right-0 mt-4 z-[1100] w-[calc(100vw-2rem)] sm:w-80 max-w-sm shadow-2xl rounded-xl overflow-hidden notification-dropdown"
+                             style="transform-origin: top right;">
+                            <div hx-get="{% url 'core:notification_list' %}" hx-trigger="intersect once" class="bg-white shadow-2xl border border-gray-100">
                                 <div class="p-4 text-center">
                                     <span class="loading-spinner"></span>
                                 </div>
@@ -431,6 +577,7 @@
                     <a href="{% url 'core:invoice_create' %}" class="btn" style="background: var(--secondary); color: white; padding: 0.4rem 0.8rem; font-size: 0.85rem;">
                         <span>+</span> <span class="new-invoice-text">New Invoice</span>
                     </a>
+                    {% endif %}
                     <button class="mobile-toggle" aria-label="Toggle Menu" onclick="toggleMobileMenu()">
                         <svg id="menu-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="3" y1="12" x2="21" y2="12"></line>
@@ -441,18 +588,66 @@
                 </div>
             </div>
         </nav>
+        <!-- Daily Truth Bar -->
+        {% if user.is_authenticated %}
+        <div id="daily-truth" class="daily-truth-bar animate-fade-in">
+            <div class="daily-truth-item">
+                <span class="daily-truth-label">Total Sales:</span>
+                <span class="daily-truth-value">₦{{ total_sales_sum }}</span>
+            </div>
+            <div class="daily-truth-item">
+                <span class="daily-truth-label">Paid:</span>
+                <span class="daily-truth-value text-success">₦{{ total_paid_sum }}</span>
+            </div>
+            <div class="daily-truth-item">
+                <span class="daily-truth-label">Debt:</span>
+                <span class="daily-truth-value text-red-500">₦{{ total_debt_sum }}</span>
+            </div>
+        </div>
+        {% endif %}
     </header>
 
-    <main class="container" style="margin-top: var(--nav-height);">
+    <main class="container" style="margin-top: 160px;">
         {% block content %}{% endblock %}
     </main>
 
     <footer>
-        <p>&copy; 2026 Yeedem Books. Optimized for MSMEs. Nigerian FIRS 2026 Compliant.</p>
-        <p class="mt-2 text-xs">A product of <a href="https://yeedem.com" target="_blank" class="font-bold hover:text-secondary transition-colors">Yeedem Tech</a></p>
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p>&copy; 2026 <a href="https://yeedem.com/#team" class="font-bold hover:text-secondary">Yeedem Tech</a>. Optimized for MSMEs. Nigerian FIRS 2026 Compliant.</p>
+            <div class="mt-4 flex flex-wrap justify-center gap-4 text-xs">
+                <span>Business Identity: <a href="https://yeedem.com/#team" title="Yeedem Tech Corporate Identity" class="font-bold hover:text-secondary">Yeedem Tech</a></span>
+                <span>Team: <a href="https://yeedem.com/#team" title="The visionaries behind Yeedem Books" class="font-bold hover:text-secondary">Suleman & Sesan</a></span>
+            </div>
+            <p class="mt-4 text-xs opacity-50">A product of Yeedem Tech Innovation Labs</p>
+        </div>
     </footer>
 
     <script>
+        // Scroll Shrink Logic
+        window.onscroll = function() {
+            const header = document.getElementById("main-header");
+            const nav = header.querySelector("nav");
+            const dailyTruth = document.getElementById("daily-truth");
+            
+            if (document.body.scrollTop > 50 || document.documentElement.scrollTop > 50) {
+                header.classList.add("shadow-lg");
+                nav.style.height = "50px";
+                if (dailyTruth) {
+                    dailyTruth.style.padding = "0.25rem 1rem";
+                    dailyTruth.style.fontSize = "0.75rem";
+                    dailyTruth.style.top = "50px";
+                }
+            } else {
+                header.classList.remove("shadow-lg");
+                nav.style.height = "var(--nav-height)";
+                if (dailyTruth) {
+                    dailyTruth.style.padding = "0.75rem 1.5rem";
+                    dailyTruth.style.fontSize = "0.85rem";
+                    dailyTruth.style.top = "70px";
+                }
+            }
+        };
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/service-worker.js');

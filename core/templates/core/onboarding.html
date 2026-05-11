@@ -1,0 +1,42 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Welcome to Yeedem Books{% endblock %}
+
+{% block extra_head %}
+<style>
+    .onboarding-container {
+        max-width: 600px;
+        margin: 4rem auto;
+        text-align: center;
+    }
+    .chat-bubble {
+        background: white;
+        padding: 2rem;
+        border-radius: 2rem;
+        border-bottom-left-radius: 0.5rem;
+        box-shadow: var(--card-shadow);
+        margin-bottom: 2rem;
+        position: relative;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .chat-bubble::after {
+        content: '';
+        position: absolute;
+        bottom: -10px;
+        left: 20px;
+        border-width: 10px 10px 0;
+        border-style: solid;
+        border-color: white transparent transparent;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-container animate-fade-in" id="onboarding-content">
+    {% include 'core/fragments/onboarding_welcome.html' %}
+</div>
+
+<div class="text-center mt-8">
+    <a href="{% url 'core:dashboard' %}" class="text-gray-400 hover:text-primary transition-colors text-sm font-medium">Skip onboarding and go to Dashboard →</a>
+</div>
+{% endblock %}
