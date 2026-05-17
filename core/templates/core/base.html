@@ -517,7 +517,7 @@
     <header id="main-header" class="fixed top-0 left-0 right-0 z-[1000] transition-all duration-300">
         <nav class="transition-all duration-300">
             <div class="nav-container" style="max-width: 1200px; margin: 0 auto; width: 100%; display: flex; justify-content: space-between; align-items: center;">
-                <a href="{% url 'core:dashboard' %}" class="logo">
+                <a href="{% if user.is_authenticated %}{% url 'core:dashboard' %}{% else %}{% url 'core:landing_page' %}{% endif %}" class="logo">
                     <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
                         <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
@@ -536,6 +536,7 @@
                         <button type="submit" class="nav-link" style="background: none; border: none; cursor: pointer; color: #ff6b6b; font-weight: 800;">Logout</button>
                     </form>
                     {% else %}
+                    <a href="{% url 'core:landing_page' %}" class="nav-link">Home</a>
                     <a href="{% url 'login' %}" class="nav-link">Login</a>
                     <a href="{% url 'core:signup' %}" class="nav-link">Sign Up</a>
                     {% endif %}

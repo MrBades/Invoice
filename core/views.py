@@ -67,11 +67,13 @@ def smart_input_processor(request):
                 guest_ids = request.session.get('guest_invoice_ids', [])
                 if len(guest_ids) >= 2:
                     if request.headers.get('HX-Request'):
-                        return HttpResponse('<div class="p-4 bg-red-100 text-red-700 rounded-xl">Guest limit reached. Please sign up to continue!</div>')
+                        response = HttpResponse("")
+                        response['HX-Redirect'] = reverse('core:signup')
+                        return response
                     return redirect('core:signup')
 
             # Try to find customer
-            cust_filter = {'user': request.user} if request.user.is_authenticated else {'user__isnull': True}
+            cust_filter = {'user': request.user} if request.user.is_authenticated else {'user': None}
             customer, _ = Customer.objects.get_or_create(
                 name=parsed_data['customer_name'],
                 **cust_filter,
@@ -79,7 +81,7 @@ def smart_input_processor(request):
             )
 
             # Try to find product
-            prod_filter = {'user': request.user} if request.user.is_authenticated else {'user__isnull': True}
+            prod_filter = {'user': request.user} if request.user.is_authenticated else {'user': None}
             product = Product.objects.filter(name__icontains=parsed_data['product_name'], **prod_filter).first()
             if not product:
                 product = Product.objects.create(
@@ -114,33 +116,43 @@ def smart_input_processor(request):
             )
 
             if request.headers.get('HX-Request'):
-                # Aggregated stats for OOB update
-                total_invoiced = Invoice.objects.aggregate(total=Sum('total_amount'))['total'] or 0
-                total_paid = Invoice.objects.aggregate(total=Sum('amount_paid'))['total'] or 0
-                total_debt = total_invoiced - total_paid
+                url = reverse('core:invoice_detail', args=[invoice.pk]) if request.user.is_authenticated else reverse('core:public_invoice_detail', args=[invoice.public_token])
+                response = HttpResponse("")
+                response['HX-Redirect'] = url
+                return response
 
-                context = {
-                    'invoice': invoice,
-                    'total_invoiced': f"{total_invoiced:,.2f}",
-                    'total_debt': f"{total_debt:,.2f}",
-                    'total_sales_sum': f"{total_invoiced:,.0f}",
-                    'total_paid_sum': f"{total_paid:,.0f}",
-                    'total_debt_sum': f"{total_debt:,.0f}",
-                }
-                return render(request, 'core/fragments/invoice_row_oob.html', context)
-
+            if not request.user.is_authenticated:
+                return redirect('core:public_invoice_detail', token=invoice.public_token)
             return redirect('core:invoice_detail', pk=invoice.pk)
 
-    return redirect('core:dashboard')
+    return redirect('core:dashboard') if request.user.is_authenticated else redirect('core:landing_page')
 
-def dashboard(request):
+def landing_page(request):
     if request.user.is_authenticated:
-        invoices = Invoice.objects.filter(user=request.user)
-        customers = Customer.objects.filter(user=request.user)
-    else:
-        guest_ids = request.session.get('guest_invoice_ids', [])
-        invoices = Invoice.objects.filter(id__in=guest_ids)
-        customers = Customer.objects.none() # Guests don't see customer list usually
+        return redirect('core:dashboard')
+        
+    guest_ids = request.session.get('guest_invoice_ids', [])
+    invoices = Invoice.objects.filter(id__in=guest_ids)
+    
+    total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_paid = invoices.aggregate(total=Sum('amount_paid'))['total'] or 0
+    total_debt = total_invoiced - total_paid
+    
+    recent_invoices = invoices.order_by('-created_at')[:5]
+    
+    context = {
+        'total_invoiced': f"{total_invoiced:,.2f}",
+        'total_debt': f"{total_debt:,.2f}",
+        'recent_invoices': recent_invoices,
+        'is_guest': True,
+    }
+    
+    return render(request, 'core/landing_page.html', context)
+
+@login_required
+def dashboard(request):
+    invoices = Invoice.objects.filter(user=request.user)
+    customers = Customer.objects.filter(user=request.user)
 
     # Aggregated stats
     total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
@@ -165,11 +177,12 @@ def dashboard(request):
         'customer_count': customer_count,
         'clearance_rate': round(clearance_rate, 1),
         'recent_invoices': recent_invoices,
-        'is_guest': not request.user.is_authenticated,
+        'is_guest': False,
     }
     
     return render(request, 'core/dashboard.html', context)
 
+@login_required
 def invoice_list(request):
     invoices = Invoice.objects.all().order_by('-created_at')
     return render(request, 'core/invoice_list.html', {'invoices': invoices})
@@ -179,6 +192,7 @@ def public_invoice_detail(request, token):
     invoice = get_object_or_404(Invoice, public_token=token)
     return render(request, 'core/public_invoice_detail.html', {'invoice': invoice})
 
+@login_required
 def invoice_detail(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     
@@ -204,6 +218,7 @@ def invoice_detail(request, pk):
     }
     return render(request, 'core/invoice_detail.html', context)
 
+@login_required
 def invoice_create(request):
     top_products = Product.objects.annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
 
@@ -221,6 +236,7 @@ def invoice_create(request):
         'top_products': top_products
     })
 
+@login_required
 def invoice_edit(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     if request.method == 'POST':
@@ -232,6 +248,7 @@ def invoice_edit(request, pk):
         form = InvoiceForm(instance=invoice)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Invoice {invoice.invoice_number}'})
 
+@login_required
 def invoice_pdf(request, pk):
     from fpdf import FPDF
     import io
@@ -339,6 +356,7 @@ def invoice_pdf(request, pk):
     response['Content-Disposition'] = f'attachment; filename="Invoice_{invoice.invoice_number}.pdf"'
     return response
 
+@login_required
 def clear_invoice_firs(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk)
     # Mock FIRS Clearance process
@@ -349,10 +367,12 @@ def clear_invoice_firs(request, pk):
     invoice.save()
     return redirect('core:invoice_detail', pk=pk)
 
+@login_required
 def customer_list(request):
     customers = Customer.objects.all().order_by('-created_at')
     return render(request, 'core/customer_list.html', {'customers': customers})
 
+@login_required
 def customer_create(request):
     if request.method == 'POST':
         form = CustomerForm(request.POST)
@@ -363,6 +383,7 @@ def customer_create(request):
         form = CustomerForm()
     return render(request, 'core/invoice_create.html', {'form': form, 'title': 'Add New Customer'})
 
+@login_required
 def customer_edit(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     if request.method == 'POST':
@@ -374,10 +395,12 @@ def customer_edit(request, pk):
         form = CustomerForm(instance=customer)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Customer: {customer.name}'})
 
+@login_required
 def product_list(request):
     products = Product.objects.all().order_by('-created_at')
     return render(request, 'core/product_list.html', {'products': products})
 
+@login_required
 def product_create(request):
     if request.method == 'POST':
         form = ProductForm(request.POST)
@@ -388,6 +411,7 @@ def product_create(request):
         form = ProductForm()
     return render(request, 'core/invoice_create.html', {'form': form, 'title': 'Add New Product'})
 
+@login_required
 def product_edit(request, pk):
     product = get_object_or_404(Product, pk=pk)
     if request.method == 'POST':
@@ -399,15 +423,18 @@ def product_edit(request, pk):
         form = ProductForm(instance=product)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Product: {product.name}'})
 
+@login_required
 def unread_notifications_count(request):
     count = Notification.objects.filter(is_read=False).count()
     return HttpResponse(str(count) if count > 0 else "")
 
+@login_required
 def notification_list(request):
     notifications = Notification.objects.all().order_by('-created_at')[:20]
     # Mark as read when viewed? For simplicity let's just show them.
     return render(request, 'core/notification_list.html', {'notifications': notifications})
 
+@login_required
 def mark_notifications_read(request):
     Notification.objects.filter(is_read=False).update(is_read=True)
     return HttpResponse("")

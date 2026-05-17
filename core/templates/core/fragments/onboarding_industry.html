@@ -2,6 +2,7 @@
     <h2 class="text-2xl font-extrabold text-primary mb-4">Almost there!</h2>
     <p class="text-gray-600 mb-6">What industry are you in? (This helps me customize your experience).</p>
     <form hx-post="{% url 'core:onboarding' %}?step=industry" hx-target="#onboarding-content">
+        {% csrf_token %}
         <select name="industry" class="w-full p-4 rounded-xl border-2 border-secondary focus:border-primary outline-none mb-4" required>
             <option value="retail">Retail / Shop</option>
             <option value="services">Professional Services</option>

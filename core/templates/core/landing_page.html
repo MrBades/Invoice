@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Yeedem Books | Intelligent Invoicing for MSMEs{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in" x-data="{ showLoginModal: false }">
+    <!-- Hero Section -->
+    <div class="text-center mb-12">
+        <h1 class="text-4xl md:text-5xl font-extrabold mb-4" style="color: var(--primary);">Intelligent Invoicing for MSMEs</h1>
+        <p class="text-xl text-gray-600 max-w-2xl mx-auto">Create beautiful, FIRS-compliant invoices in seconds using just plain text. No complex forms required. Test it out right now!</p>
+    </div>
+
+    <!-- Smart Input Bar -->
+    <div class="card" style="margin-bottom: 2rem; padding: 2rem; background: var(--glass); border: 2px solid var(--secondary); box-shadow: 0 20px 25px -5px rgba(51, 204, 255, 0.1);">
+        <h2 class="text-xl font-bold mb-4" style="color: var(--primary);">✨ Smart Invoice Engine (Fuse Mode)</h2>
+        <p class="mb-4 text-gray-600">You can create up to 2 trial invoices without an account. Try typing something natural.</p>
+        <form hx-post="{% url 'core:smart_input_processor' %}"
+              hx-on:htmx:before-request="document.getElementById('smart-btn-text').classList.add('hidden'); document.getElementById('smart-btn-spinner').classList.remove('hidden');"
+              hx-on:htmx:after-request="document.getElementById('smart-btn-text').classList.remove('hidden'); document.getElementById('smart-btn-spinner').classList.add('hidden');"
+              class="smart-input-form flex flex-wrap gap-4" style="align-items: stretch;">
+            {% csrf_token %}
+            <input type="text" name="smart_text" placeholder='Try typing: "Rice 5k to Musa"'
+                   class="flex-1 p-4 rounded-xl text-lg outline-none" style="min-width: 250px; border: 2px solid var(--primary); transition: all 0.3s;" required>
+            <button type="submit" class="btn btn-primary text-lg px-8 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                <span id="smart-btn-text">Generate Magic Invoice</span>
+                <span id="smart-btn-spinner" class="loading-spinner hidden" style="width: 20px; height: 20px; border-top-color: white;"></span>
+            </button>
+        </form>
+    </div>
+
+    {% if recent_invoices %}
+    <div class="section-header mt-12">
+        <h2>Your Trial Invoices</h2>
+        <button @click="showLoginModal = true" class="btn" style="background: var(--primary); color: white;">View Full History</button>
+    </div>
+
+    <div class="card">
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Date</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for invoice in recent_invoices %}
+                    <tr class="animate-fade-in cursor-pointer hover:bg-gray-50" onclick="window.location.href='{% url 'core:public_invoice_detail' invoice.public_token %}'">
+                        <td style="color: var(--primary); font-weight: 700;">{{ invoice.invoice_number }}</td>
+                        <td>{{ invoice.customer.name }}</td>
+                        <td>{{ invoice.issue_date }}</td>
+                        <td>₦{{ invoice.total_amount }}</td>
+                        <td>
+                            <span class="badge {% if invoice.status == 'Paid' %}badge-success{% else %}badge-warning{% endif %}">
+                                {{ invoice.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Login/Signup Modal -->
+    <div x-show="showLoginModal" 
+         class="fixed inset-0 z-[2000] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         style="display: none;">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4" @click.away="showLoginModal = false">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold" style="color: var(--primary);">Unlock Full Access</h2>
+                <p class="text-gray-600 mt-2">Create a free account to view long-term transaction history, save unlimited invoices, and track your business growth.</p>
+            </div>
+            
+            <div class="flex flex-col gap-4">
+                <a href="{% url 'core:signup' %}" class="btn w-full justify-center text-lg shadow-md" style="background: var(--secondary); color: var(--primary);">Create Free Account</a>
+                <a href="{% url 'login' %}" class="btn w-full justify-center text-lg bg-gray-100 hover:bg-gray-200 text-gray-800 shadow-sm border border-gray-200">Log In</a>
+                <button @click="showLoginModal = false" class="text-gray-500 hover:text-gray-800 text-sm mt-2">Maybe Later</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.body.addEventListener('htmx:responseError', function(event) {
+        // If we get redirected to signup due to guest limit, we can just intercept and show modal or let it redirect
+        if(event.detail.xhr.responseURL && event.detail.xhr.responseURL.includes('signup')) {
+             window.location.href = "{% url 'core:signup' %}";
+        }
+    });
+</script>
+{% endblock %}

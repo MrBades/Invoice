@@ -7,15 +7,7 @@
 
 {% block content %}
 <div class="animate-fade-in">
-    {% if is_guest %}
-    <div class="card p-6 mb-8" style="background: var(--primary); color: white; border: none; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.5rem;">
-        <div>
-            <h2 class="text-xl font-bold" style="color: var(--secondary);">✨ Guest Mode Active</h2>
-            <p class="opacity-80">You can create 2 trial invoices. Create an account to save them forever!</p>
-        </div>
-        <a href="{% url 'core:signup' %}" class="btn" style="background: var(--secondary); color: var(--primary); font-weight: 800;">Create Free Account</a>
-    </div>
-    {% endif %}
+
     <div class="section-header">
         <div>
             <h1>Business Overview</h1>
