@@ -609,6 +609,26 @@
     </header>
 
     <main class="container" style="margin-top: 160px;">
+        <!-- Global Alert Messages -->
+        {% if messages %}
+        <div class="mb-8 space-y-3 animate-fade-in max-w-4xl mx-auto" style="position: relative; z-index: 1000;">
+            {% for message in messages %}
+            <div class="p-4 rounded-2xl border font-bold flex items-center justify-between shadow-md transition-all
+                        {% if 'success' in message.tags %}bg-green-50 text-green-700 border-green-200
+                        {% elif 'error' in message.tags or 'danger' in message.tags %}bg-red-50 text-red-700 border-red-200
+                        {% else %}bg-blue-50 text-blue-700 border-blue-200{% endif %}">
+                <div class="flex items-center gap-2">
+                    <span>
+                        {% if 'success' in message.tags %}✓{% else %}⚠️{% endif %}
+                    </span>
+                    <span>{{ message }}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-lg opacity-50 hover:opacity-100 transition-opacity font-bold" style="background: none; border: none; cursor: pointer; color: inherit; line-height: 1; padding: 0 4px;">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 

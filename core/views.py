@@ -115,6 +115,8 @@ def smart_input_processor(request):
                 total_price=parsed_data['amount']
             )
 
+            messages.success(request, f"Invoice #{invoice.invoice_number} successfully generated via YB AI!")
+
             if request.headers.get('HX-Request'):
                 url = reverse('core:invoice_detail', args=[invoice.pk]) if request.user.is_authenticated else reverse('core:public_invoice_detail', args=[invoice.public_token])
                 response = HttpResponse("")
@@ -124,8 +126,15 @@ def smart_input_processor(request):
             if not request.user.is_authenticated:
                 return redirect('core:public_invoice_detail', token=invoice.public_token)
             return redirect('core:invoice_detail', pk=invoice.pk)
-
-    return redirect('core:dashboard') if request.user.is_authenticated else redirect('core:landing_page')
+        else:
+            messages.error(request, "YB AI could not parse the text. Please use format like: 'Rice 5k to Musa' or 'Rice 5k'.")
+            
+    url = reverse('core:dashboard') if request.user.is_authenticated else reverse('core:landing_page')
+    if request.headers.get('HX-Request'):
+        response = HttpResponse("")
+        response['HX-Redirect'] = url
+        return response
+    return redirect(url)
 
 def landing_page(request):
     if request.user.is_authenticated:
@@ -184,7 +193,7 @@ def dashboard(request):
 
 @login_required
 def invoice_list(request):
-    invoices = Invoice.objects.all().order_by('-created_at')
+    invoices = Invoice.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/invoice_list.html', {'invoices': invoices})
 
 
@@ -194,7 +203,7 @@ def public_invoice_detail(request, token):
 
 @login_required
 def invoice_detail(request, pk):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
     
     # Construct share links
     customer_name = invoice.customer.name
@@ -220,15 +229,17 @@ def invoice_detail(request, pk):
 
 @login_required
 def invoice_create(request):
-    top_products = Product.objects.annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
+    top_products = Product.objects.filter(user=request.user).annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
 
     if request.method == 'POST':
-        form = InvoiceForm(request.POST, request.FILES)
+        form = InvoiceForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
-            invoice = form.save() # Calculation handled in models.py
+            invoice = form.save(commit=False)
+            invoice.user = request.user
+            invoice.save()
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
-        form = InvoiceForm()
+        form = InvoiceForm(user=request.user)
     
     return render(request, 'core/invoice_create.html', {
         'form': form,
@@ -238,26 +249,33 @@ def invoice_create(request):
 
 @login_required
 def invoice_edit(request, pk):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
     if request.method == 'POST':
-        form = InvoiceForm(request.POST, request.FILES, instance=invoice)
+        form = InvoiceForm(request.POST, request.FILES, instance=invoice, user=request.user)
         if form.is_valid():
             invoice = form.save() # Calculation handled in models.py
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
-        form = InvoiceForm(instance=invoice)
+        form = InvoiceForm(instance=invoice, user=request.user)
     return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Invoice {invoice.invoice_number}'})
 
-@login_required
-def invoice_pdf(request, pk):
+def generate_invoice_pdf_response(request, invoice, watermark=False):
     from fpdf import FPDF
     import io
-
-    invoice = get_object_or_404(Invoice, pk=pk)
 
     # Create instance of FPDF class
     pdf = FPDF()
     pdf.add_page()
+    
+    if watermark:
+        with pdf.local_context(fill_opacity=0.12):
+            pdf.set_font("Helvetica", 'B', 40)
+            pdf.set_text_color(200, 200, 200) # Light gray
+            x = 40
+            y = 140
+            with pdf.rotation(45, x, y):
+                pdf.text(x, y, "YEEDEM TRIAL VERSION")
+
     pdf.set_font("Helvetica", size=12)
 
     # Header
@@ -357,8 +375,35 @@ def invoice_pdf(request, pk):
     return response
 
 @login_required
+def invoice_pdf(request, pk):
+    invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
+    return generate_invoice_pdf_response(request, invoice, watermark=False)
+
+def public_invoice_pdf(request, token):
+    invoice = get_object_or_404(Invoice, public_token=token)
+    watermark = invoice.user is None
+    return generate_invoice_pdf_response(request, invoice, watermark=watermark)
+
+@login_required
+def quick_customer_create(request):
+    if request.method == 'POST':
+        name = request.POST.get('quick_name', '').strip()
+        phone = request.POST.get('quick_phone', '').strip() or '00000000000'
+        if name:
+            customer = Customer.objects.create(name=name, phone_number=phone, user=request.user)
+            customers = Customer.objects.filter(user=request.user).order_by('name')
+            options = []
+            options.append('<option value="" disabled>Select Customer</option>')
+            for c in customers:
+                selected = "selected" if c.id == customer.id else ""
+                options.append(f'<option value="{c.id}" {selected}>{c.name}</option>')
+            html = f'<select name="customer" required id="id_customer">{"".join(options)}</select>'
+            return HttpResponse(html)
+    return HttpResponse("Invalid request", status=400)
+
+@login_required
 def clear_invoice_firs(request, pk):
-    invoice = get_object_or_404(Invoice, pk=pk)
+    invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
     # Mock FIRS Clearance process
     irn = "NRS-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
     invoice.nrs_irn = irn
@@ -369,7 +414,7 @@ def clear_invoice_firs(request, pk):
 
 @login_required
 def customer_list(request):
-    customers = Customer.objects.all().order_by('-created_at')
+    customers = Customer.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/customer_list.html', {'customers': customers})
 
 @login_required
@@ -385,7 +430,7 @@ def customer_create(request):
 
 @login_required
 def customer_edit(request, pk):
-    customer = get_object_or_404(Customer, pk=pk)
+    customer = get_object_or_404(Customer, pk=pk, user=request.user)
     if request.method == 'POST':
         form = CustomerForm(request.POST, instance=customer)
         if form.is_valid():
@@ -397,7 +442,7 @@ def customer_edit(request, pk):
 
 @login_required
 def product_list(request):
-    products = Product.objects.all().order_by('-created_at')
+    products = Product.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'core/product_list.html', {'products': products})
 
 @login_required
@@ -413,7 +458,7 @@ def product_create(request):
 
 @login_required
 def product_edit(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(Product, pk=pk, user=request.user)
     if request.method == 'POST':
         form = ProductForm(request.POST, instance=product)
         if form.is_valid():
@@ -439,16 +484,32 @@ def mark_notifications_read(request):
     Notification.objects.filter(is_read=False).update(is_read=True)
     return HttpResponse("")
 
+@login_required
 def onboarding(request):
     step = request.GET.get('step', 'welcome')
+    profile, created = Profile.objects.get_or_create(user=request.user)
     
     if request.method == 'POST':
+        current_step = request.GET.get('step', 'welcome')
+        
+        # Save onboarding data based on current step being submitted
+        if current_step == 'business_name':
+            business_name = request.POST.get('business_name', '').strip()
+            if business_name:
+                profile.business_name = business_name
+                profile.save()
+        elif current_step == 'industry':
+            industry = request.POST.get('industry', '').strip()
+            if industry:
+                profile.industry = industry
+                profile.save()
+
         next_steps = {
             'welcome': 'business_name',
             'business_name': 'industry',
             'industry': 'complete'
         }
-        step = next_steps.get(step, 'complete')
+        step = next_steps.get(current_step, 'complete')
         
         if step == 'complete':
             if request.headers.get('HX-Request'):
@@ -458,7 +519,7 @@ def onboarding(request):
             return redirect('core:dashboard')
 
     context = {'step': step}
-    if request.headers.get('HX-Request'):
+    if request.headers.get('HX-Request') and not request.headers.get('HX-Boosted'):
         return render(request, f'core/fragments/onboarding_{step}.html', context)
     
     return render(request, 'core/onboarding.html', context)

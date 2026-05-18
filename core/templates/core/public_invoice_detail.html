@@ -4,65 +4,121 @@
 
 {% block content %}
 <div class="max-w-3xl mx-auto py-10 px-6 bg-white shadow-xl rounded-2xl border border-gray-100">
-    <div class="flex justify-between items-start mb-8">
-        <div>
-            <h1 class="text-3xl font-bold text-primary">INVOICE</h1>
-            <p class="text-gray-500">#{{ invoice.invoice_number }}</p>
+    {% if invoice.user is None %}
+    <div class="mb-8 p-4 rounded-xl bg-cyan-50/50 border border-secondary/30 text-primary text-sm flex flex-col sm:flex-row justify-between items-center gap-3">
+        <div class="flex items-center gap-2">
+            <span class="text-lg">💡</span>
+            <span>This is a trial guest invoice. Preview and download your PDF now!</span>
         </div>
-        <div class="text-right">
-            <h2 class="text-xl font-bold text-secondary">Yeedem Books</h2>
-            <p class="text-sm text-gray-500">Lagos, Nigeria</p>
+        <a href="{% url 'core:public_invoice_pdf' invoice.public_token %}" class="btn text-xs font-bold py-2 px-4 shadow-sm" style="background: var(--secondary); color: var(--primary);" hx-boost="false">
+            📄 Download Trial PDF
+        </a>
+    </div>
+    {% else %}
+    <div class="mb-8 flex justify-end">
+        <a href="{% url 'core:public_invoice_pdf' invoice.public_token %}" class="btn text-xs font-bold py-2 px-4 shadow-sm" style="background: var(--secondary); color: var(--primary);" hx-boost="false">
+            📄 Download Invoice PDF
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- Premium Visual Invoice Document Preview Sheet -->
+    <div class="flex flex-col sm:flex-row justify-between items-start gap-6 mb-10 pb-8 border-b border-gray-100">
+        <div>
+            <!-- Logo & Company Name -->
+            <div class="flex items-center gap-2 mb-3">
+                <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
+                    <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
+                </svg>
+                <span class="text-xl font-extrabold text-primary">{{ invoice.user.profile.business_name|default:"Yeedem Books" }}</span>
+            </div>
+            <p class="text-sm text-gray-500 font-medium">{{ invoice.user.profile.address|default:"Lagos, Nigeria" }}</p>
+            <p class="text-sm text-gray-500 font-medium">TIN: {{ invoice.user.profile.tin|default:"12345678-0001" }}</p>
+            {% if invoice.user.profile.phone_number %}
+                <p class="text-sm text-gray-500 font-medium">Phone: {{ invoice.user.profile.phone_number }}</p>
+            {% endif %}
+        </div>
+        <div class="sm:text-right">
+            <h1 class="text-3xl font-extrabold text-primary tracking-tight mb-2">INVOICE</h1>
+            <p class="text-lg font-bold text-secondary">#{{ invoice.invoice_number }}</p>
+            <span class="badge mt-2 {% if invoice.status == 'Paid' %}badge-success{% else %}badge-warning{% endif %}">
+                {{ invoice.status }}
+            </span>
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-8 mb-10">
+    <!-- Invoice Details Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-10">
         <div>
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Bill To</h3>
-            <p class="text-lg font-bold text-gray-800">{{ invoice.customer.name }}</p>
-            <p class="text-sm text-gray-600">{{ invoice.customer.phone_number }}</p>
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Bill To</h3>
+            <p class="text-lg font-extrabold text-primary">{{ invoice.customer.name }}</p>
+            <p class="text-sm text-gray-600 mt-1 font-medium">{{ invoice.customer.phone_number }}</p>
+            {% if invoice.customer.email %}
+                <p class="text-sm text-gray-600 font-medium">{{ invoice.customer.email }}</p>
+            {% endif %}
+            {% if invoice.customer.tin %}
+                <p class="text-sm text-gray-500 mt-1 font-mono">TIN: {{ invoice.customer.tin }}</p>
+            {% endif %}
         </div>
-        <div class="text-right">
-            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Details</h3>
-            <p class="text-sm text-gray-600">Date: <strong>{{ invoice.issue_date }}</strong></p>
-            <p class="text-sm text-gray-600">Status: <span class="badge {% if invoice.status == 'Paid' %}badge-success{% else %}badge-warning{% endif %}">{{ invoice.status }}</span></p>
+        <div class="sm:text-right">
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Invoice Info</h3>
+            <p class="text-sm text-gray-600">Date Issued: <strong class="text-primary">{{ invoice.issue_date }}</strong></p>
+            <p class="text-sm text-gray-600 mt-1">Due Date: <strong class="text-primary">{{ invoice.expected_pay_date|default:invoice.issue_date }}</strong></p>
         </div>
     </div>
 
-    <table class="w-100 mb-8 border-collapse">
-        <thead>
-            <tr class="bg-gray-50">
-                <th class="py-3 px-4 text-left text-xs font-bold text-gray-500 uppercase border-b">Description</th>
-                <th class="py-3 px-4 text-right text-xs font-bold text-gray-500 uppercase border-b">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td class="py-4 px-4 text-gray-800 border-b">General Services / Products</td>
-                <td class="py-4 px-4 text-right text-gray-800 border-b">₦{{ invoice.subtotal|floatformat:2 }}</td>
-            </tr>
-        </tbody>
-    </table>
+    <!-- Items Table -->
+    <div class="table-container mb-10 border border-gray-100 rounded-xl overflow-hidden shadow-sm">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-slate-50 border-b border-gray-100">
+                    <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider">Item / Description</th>
+                    <th class="py-4 px-6 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
+                    <td class="py-5 px-6 font-bold text-primary">General Services / Products</td>
+                    <td class="py-5 px-6 text-right font-bold text-primary">₦{{ invoice.subtotal|floatformat:2 }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
+    <!-- Totals Section -->
     <div class="flex justify-end mb-10">
-        <div class="w-64 space-y-2">
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-500">Subtotal</span>
-                <span class="font-medium">₦{{ invoice.subtotal|floatformat:2 }}</span>
+        <div class="w-full sm:w-80 space-y-3 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+            <div class="flex justify-between items-center text-sm">
+                <span class="text-gray-500 font-semibold">Subtotal</span>
+                <span class="font-bold text-primary">₦{{ invoice.subtotal|floatformat:2 }}</span>
             </div>
-            <div class="flex justify-between text-sm">
-                <span class="text-gray-500">VAT (7.5%)</span>
-                <span class="font-medium">₦{{ invoice.vat_amount|floatformat:2 }}</span>
+            <div class="flex justify-between items-center text-sm pb-3 border-b border-slate-200">
+                <span class="text-gray-500 font-semibold">VAT (7.5%)</span>
+                <span class="font-bold text-primary">₦{{ invoice.vat_amount|floatformat:2 }}</span>
             </div>
-            <div class="flex justify-between text-xl font-bold text-secondary pt-2 border-t">
-                <span>Total</span>
-                <span>₦{{ invoice.total_amount|floatformat:2 }}</span>
+            <div class="flex justify-between items-center pt-2">
+                <span class="text-base font-extrabold text-primary">Total Amount</span>
+                <span class="text-xl font-extrabold text-primary">₦{{ invoice.total_amount|floatformat:2 }}</span>
             </div>
+            <div class="flex justify-between items-center pt-2 text-green-700">
+                <span class="text-sm font-bold">Amount Paid</span>
+                <span class="text-base font-extrabold">₦{{ invoice.amount_paid|floatformat:2 }}</span>
+            </div>
+            {% if invoice.is_gbese %}
+            <div class="flex justify-between items-center pt-2 text-red-600 border-t border-slate-200">
+                <span class="text-sm font-bold">Outstanding Gbese</span>
+                <span class="text-base font-extrabold">₦{{ invoice.total_amount|subtract:invoice.amount_paid|floatformat:2 }}</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 
-    <div class="text-center pt-8 border-t border-gray-100">
-        <p class="text-sm text-gray-500 mb-2">FIRS NRS Clearance: <span class="font-bold text-gray-700">{{ invoice.nrs_irn|default:"Pending Verification" }}</span></p>
-        <p class="text-xs text-gray-400">© 2026 Yeedem Books. All rights reserved.</p>
+    <!-- Footer / Clearance status -->
+    <div class="text-center pt-8 border-t border-slate-100">
+        <p class="text-xs font-semibold text-gray-400 tracking-wider uppercase mb-1">Nigerian FIRS 2026 Compliant Document</p>
+        <p class="text-sm font-bold text-primary mb-3">Thank you for your business!</p>
+        <p class="text-xs text-gray-400">© 2026 {{ invoice.user.profile.business_name|default:"Yeedem Books" }}. Powered by Yeedem Books.</p>
     </div>
 </div>
 {% endblock %}

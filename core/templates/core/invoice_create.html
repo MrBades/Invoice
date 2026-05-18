@@ -16,8 +16,43 @@
             {% csrf_token %}
             {% for field in form %}
             <div class="form-group">
-                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                <div class="flex justify-between items-center mb-1">
+                    <label for="{{ field.id_for_label }}" style="margin-bottom: 0;">{{ field.label }}</label>
+                    {% if field.name == 'customer' %}
+                    <button type="button" id="toggle-new-customer" class="text-secondary text-sm font-bold hover:underline" onclick="toggleNewCustomerForm()">
+                        + Quick Add Walk-in
+                    </button>
+                    {% endif %}
+                </div>
                 {{ field }}
+
+                {% if field.name == 'customer' %}
+                <!-- Quick Add Walk-in Customer Panel -->
+                <div id="new-customer-form-container" class="hidden mt-4 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 space-y-4">
+                    <h4 class="font-bold text-sm text-primary">Quick Add Walk-in Customer</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="form-group mb-0">
+                            <label class="text-xs mb-1" style="margin-bottom: 0;">Full Name</label>
+                            <input type="text" id="quick-cust-name" name="quick_name" class="w-full p-2 border rounded-lg text-sm bg-white" placeholder="Customer Name">
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="text-xs mb-1" style="margin-bottom: 0;">Phone Number</label>
+                            <input type="text" id="quick-cust-phone" name="quick_phone" class="w-full p-2 border rounded-lg text-sm bg-white" placeholder="080XXXXXXXX">
+                        </div>
+                    </div>
+                    <button type="button" 
+                            hx-post="{% url 'core:quick_customer_create' %}" 
+                            hx-include="#quick-cust-name, #quick-cust-phone"
+                            hx-target="#id_customer" 
+                            hx-swap="outerHTML"
+                            hx-on::after-request="if(event.detail.successful) { toggleNewCustomerForm(); document.getElementById('quick-cust-name').value = ''; document.getElementById('quick-cust-phone').value = ''; }"
+                            class="btn text-xs py-2 px-4 w-auto"
+                            style="background: var(--secondary); color: var(--primary);">
+                        Create & Select
+                    </button>
+                </div>
+                {% endif %}
+
                 {% if field.errors %}
                 <p class="text-red-500 text-xs mt-1">{{ field.errors.as_text }}</p>
                 {% endif %}
@@ -30,6 +65,35 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function toggleNewCustomerForm() {
+            const container = document.getElementById('new-customer-form-container');
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const fields = [document.getElementById('id_subtotal'), document.getElementById('id_amount_paid')];
+            fields.forEach(field => {
+                if (field) {
+                    field.addEventListener('focus', function() {
+                        if (this.value === '0' || this.value === '0.00' || this.value === '0.0') {
+                            this.value = '';
+                        }
+                    });
+                    field.addEventListener('blur', function() {
+                        if (this.value.trim() === '') {
+                            this.value = '0';
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 
     {% if top_products %}
     <div class="mt-12">

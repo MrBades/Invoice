@@ -14,9 +14,11 @@ urlpatterns = [
     path('invoices/<int:pk>/pdf/', views.invoice_pdf, name='invoice_pdf'),
     path('invoices/<int:pk>/clear/', views.clear_invoice_firs, name='clear_invoice_firs'),
     path('invoices/public/<uuid:token>/', views.public_invoice_detail, name='public_invoice_detail'),
+    path('invoices/public/<uuid:token>/pdf/', views.public_invoice_pdf, name='public_invoice_pdf'),
     
     path('customers/', views.customer_list, name='customer_list'),
     path('customers/create/', views.customer_create, name='customer_create'),
+    path('customers/quick-create/', views.quick_customer_create, name='quick_customer_create'),
     path('customers/<int:pk>/edit/', views.customer_edit, name='customer_edit'),
     
     path('products/', views.product_list, name='product_list'),

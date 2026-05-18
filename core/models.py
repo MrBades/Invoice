@@ -118,8 +118,15 @@ class Notification(models.Model):
     def __str__(self):
         return self.message[:50]
 class Profile(models.Model):
+    INDUSTRY_CHOICES = [
+        ('retail', 'Retail / Shop'),
+        ('services', 'Professional Services'),
+        ('manufacturing', 'Manufacturing'),
+        ('other', 'Other'),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     business_name = models.CharField(max_length=255, blank=True)
+    industry = models.CharField(max_length=100, choices=INDUSTRY_CHOICES, blank=True)
     logo = models.ImageField(upload_to='logos/', blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profiles/', blank=True, null=True)
     phone_number = models.CharField(max_length=20, blank=True)
