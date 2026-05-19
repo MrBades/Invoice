@@ -1,8 +1,26 @@
-<div class="chat-bubble animate-fade-in">
-    <h2 class="text-2xl font-extrabold text-primary mb-4">Hello! I'm YB AI.</h2>
-    <p class="text-gray-600 mb-6">I'll help you set up Yeedem Books in under 30 seconds. Ready to transform your business?</p>
-    <form hx-post="{% url 'core:onboarding' %}?step=welcome" hx-target="#onboarding-content">
+<div class="chat-bubble animate-fade-in text-left">
+    <h2 class="text-2xl font-extrabold text-primary mb-2 text-center">Hello! I'm YB AI.</h2>
+    <p class="text-gray-600 mb-6 text-center">Let's set up your Yeedem Books profile in seconds. Choose how you want to start:</p>
+    
+    <form hx-post="{% url 'core:onboarding' %}?step=welcome" hx-target="#onboarding-content" class="space-y-4">
         {% csrf_token %}
-        <button type="submit" class="btn btn-primary w-full justify-center">Let's Get Started</button>
+        
+        <button type="submit" name="setup_method" value="ai_setup" 
+                class="w-full p-5 rounded-2xl border-2 border-primary hover:bg-primary/5 transition-all text-left flex items-start gap-4 focus:outline-none">
+            <span class="text-3xl">✨</span>
+            <div>
+                <h3 class="font-bold text-primary text-lg">AI-Powered Setup (Recommended)</h3>
+                <p class="text-sm text-gray-500">Paste your business card, website text, bio, or description, and YB AI will auto-fill your profile details.</p>
+            </div>
+        </button>
+        
+        <button type="submit" name="setup_method" value="manual_setup" 
+                class="w-full p-5 rounded-2xl border-2 border-secondary hover:border-primary/50 transition-all text-left flex items-start gap-4 focus:outline-none">
+            <span class="text-3xl">📝</span>
+            <div>
+                <h3 class="font-bold text-gray-800 text-lg">Manual Setup</h3>
+                <p class="text-sm text-gray-500">Enter your business name, industry type, address, TIN, and phone number step-by-step.</p>
+            </div>
+        </button>
     </form>
 </div>

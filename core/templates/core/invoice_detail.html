@@ -102,10 +102,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
+                            {% for item in invoice.invoiceitem_set.all %}
+                            <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors text-sm">
+                                <td class="py-5 px-6 font-bold text-primary">
+                                    {{ item.product.name }}
+                                    {% if item.quantity > 1 %}
+                                    <span class="text-xs text-gray-400 font-normal ml-2">({{ item.quantity }} × ₦{{ item.unit_price|floatformat:2 }})</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-5 px-6 text-right font-bold text-primary">₦{{ item.total_price|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors text-sm">
                                 <td class="py-5 px-6 font-bold text-primary">General Services / Products</td>
                                 <td class="py-5 px-6 text-right font-bold text-primary">₦{{ invoice.subtotal|floatformat:2 }}</td>
                             </tr>
+                            {% endfor %}
                         </tbody>
                     </table>
                 </div>
@@ -149,15 +161,15 @@
             <div class="card p-8">
                 <h3 class="text-lg font-bold text-primary mb-6">Quick Actions</h3>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <a href="{{ wa_url }}" target="_blank" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-green-50 text-green-700 transition-all hover:bg-green-100">
+                    <button onclick="handleWhatsAppAction()" class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-green-50 text-green-700 transition-all hover:bg-green-100 w-full">
                         <span class="text-2xl">💬</span>
                         <span class="text-xs font-bold uppercase">WhatsApp</span>
-                    </a>
-                    <a href="{{ email_url }}" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-blue-50 text-blue-700 transition-all hover:bg-blue-100">
+                    </button>
+                    <button onclick="handleEmailAction()" class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-blue-50 text-blue-700 transition-all hover:bg-blue-100 w-full">
                         <span class="text-2xl">📧</span>
                         <span class="text-xs font-bold uppercase">Email</span>
-                    </a>
-                    <button onclick="navigator.clipboard.writeText('{{ request.build_absolute_uri }}{% url 'core:public_invoice_detail' invoice.public_token %}')" class="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-50 text-purple-700 transition-all hover:bg-purple-100">
+                    </button>
+                    <button onclick="navigator.clipboard.writeText('{{ public_link }}'); alert('Public Link copied to clipboard!');" class="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-purple-50 text-purple-700 transition-all hover:bg-purple-100 w-full">
                         <span class="text-2xl">🔗</span>
                         <span class="text-xs font-bold uppercase">Public Link</span>
                     </button>
@@ -189,4 +201,118 @@
         </div>
     </div>
 </div>
+
+<!-- WhatsApp Contact Modal -->
+<div id="whatsapp-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="card p-6 max-w-sm w-full bg-white shadow-2xl relative animate-fade-in">
+        <h3 class="text-lg font-bold text-primary mb-2">WhatsApp Number Required</h3>
+        <p class="text-sm text-gray-500 mb-4">The customer doesn't have a valid WhatsApp number. Please enter it below to send the invoice.</p>
+        <form hx-post="{% url 'core:update_customer_contact' invoice.customer.pk %}"
+              hx-swap="none"
+              hx-on::after-request="if(event.detail.successful) { triggerWhatsAppSend(); }">
+            {% csrf_token %}
+            <div class="form-group mb-4">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Phone / WhatsApp Number</label>
+                <input type="text" name="phone_number" id="modal-whatsapp-input" 
+                       class="w-full p-3 border rounded-xl mt-1 text-sm bg-white" placeholder="e.g. 080XXXXXXXX" required>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeModals()" class="btn" style="background: #f1f5f9; color: #475569;">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save & Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Email Contact Modal -->
+<div id="email-modal" class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="card p-6 max-w-sm w-full bg-white shadow-2xl relative animate-fade-in">
+        <h3 class="text-lg font-bold text-primary mb-2">Customer Email Required</h3>
+        <p class="text-sm text-gray-500 mb-4">The customer doesn't have a valid email address. Please enter it below to send the invoice.</p>
+        <form hx-post="{% url 'core:update_customer_contact' invoice.customer.pk %}"
+              hx-swap="none"
+              hx-on::after-request="if(event.detail.successful) { triggerEmailSend(); }">
+            {% csrf_token %}
+            <div class="form-group mb-4">
+                <label class="text-xs font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
+                <input type="email" name="email" id="modal-email-input" 
+                       class="w-full p-3 border rounded-xl mt-1 text-sm bg-white" placeholder="customer@example.com" required>
+            </div>
+            <div class="flex gap-3 justify-end">
+                <button type="button" onclick="closeModals()" class="btn" style="background: #f1f5f9; color: #475569;">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save & Send</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    let tempPhone = "{{ invoice.customer.phone_number|escapejs }}";
+    let tempEmail = "{{ invoice.customer.email|escapejs }}";
+
+    function isValidPhone(phone) {
+        if (!phone) return false;
+        const cleaned = phone.replace(/\D/g, '');
+        return cleaned.length >= 7 && cleaned !== '00000000000';
+    }
+
+    function isValidEmail(email) {
+        return email && email.includes('@') && email.length > 5;
+    }
+
+    function handleWhatsAppAction() {
+        if (isValidPhone(tempPhone)) {
+            openWhatsAppLink(tempPhone);
+        } else {
+            document.getElementById('whatsapp-modal').classList.remove('hidden');
+            document.getElementById('whatsapp-modal').classList.add('flex');
+        }
+    }
+
+    function handleEmailAction() {
+        if (isValidEmail(tempEmail)) {
+            openEmailLink(tempEmail);
+        } else {
+            document.getElementById('email-modal').classList.remove('hidden');
+            document.getElementById('email-modal').classList.add('flex');
+        }
+    }
+
+    function closeModals() {
+        document.getElementById('whatsapp-modal').classList.add('hidden');
+        document.getElementById('whatsapp-modal').classList.remove('flex');
+        document.getElementById('email-modal').classList.add('hidden');
+        document.getElementById('email-modal').classList.remove('flex');
+    }
+
+    function openWhatsAppLink(phoneVal) {
+        const cleanedPhone = phoneVal.replace(/\+/g, '').replace(/\s/g, '').replace(/-/g, '');
+        const waMsg = "Hello {{ invoice.customer.name|escapejs }}, here is your invoice {{ invoice.invoice_number|escapejs }} from Yeedem Books. View details here: {{ public_link|escapejs }}. Total: N{{ invoice.total_amount|floatformat:2 }}. Thank you for your business!";
+        const url = "https://wa.me/" + cleanedPhone + "?text=" + encodeURIComponent(waMsg);
+        window.open(url, "_blank");
+    }
+
+    function openEmailLink(emailVal) {
+        const subject = "Invoice {{ invoice.invoice_number|escapejs }} from Yeedem Books";
+        const body = "Hello {{ invoice.customer.name|escapejs }},\n\nPlease find your invoice {{ invoice.invoice_number|escapejs }} for N{{ invoice.total_amount|floatformat:2 }}.\n\nYou can view/download it at: {{ public_link|escapejs }}\n\nThank you for your business!";
+        const url = "mailto:" + emailVal + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+        window.location.href = url;
+    }
+
+    function triggerWhatsAppSend() {
+        const val = document.getElementById('modal-whatsapp-input').value.trim();
+        tempPhone = val;
+        closeModals();
+        openWhatsAppLink(val);
+        setTimeout(() => { location.reload(); }, 1000);
+    }
+
+    function triggerEmailSend() {
+        const val = document.getElementById('modal-email-input').value.trim();
+        tempEmail = val;
+        closeModals();
+        openEmailLink(val);
+        setTimeout(() => { location.reload(); }, 1000);
+    }
+</script>
 {% endblock %}

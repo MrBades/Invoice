@@ -132,10 +132,22 @@
             </tr>
         </thead>
         <tbody>
+            {% for item in invoice.invoiceitem_set.all %}
+            <tr>
+                <td>
+                    {{ item.product.name }}
+                    {% if item.quantity > 1 %}
+                    <span style="font-size: 10px; color: #666;">({{ item.quantity }} × ₦{{ item.unit_price|floatformat:2 }})</span>
+                    {% endif %}
+                </td>
+                <td style="text-align: right;">₦{{ item.total_price|floatformat:2 }}</td>
+            </tr>
+            {% empty %}
             <tr>
                 <td>General Services / Products</td>
                 <td style="text-align: right;">₦{{ invoice.subtotal|floatformat:2 }}</td>
             </tr>
+            {% endfor %}
         </tbody>
     </table>
 

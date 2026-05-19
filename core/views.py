@@ -83,11 +83,16 @@ def smart_input_processor(request):
             # Try to find product
             prod_filter = {'user': request.user} if request.user.is_authenticated else {'user': None}
             product = Product.objects.filter(name__icontains=parsed_data['product_name'], **prod_filter).first()
+            
+            quantity = parsed_data.get('quantity', 1)
+            subtotal = parsed_data['amount']
+            unit_price = subtotal / Decimal(str(quantity)) if quantity > 0 else Decimal('0.00')
+
             if not product:
                 product = Product.objects.create(
                     name=parsed_data['product_name'],
-                    retail_price=parsed_data['amount'],
-                    wholesale_price=parsed_data['amount'],
+                    retail_price=unit_price,
+                    wholesale_price=unit_price,
                     **prod_filter
                 )
 
@@ -96,7 +101,8 @@ def smart_input_processor(request):
                 user=request.user if request.user.is_authenticated else None,
                 customer=customer,
                 issue_date=timezone.now().date(),
-                subtotal=parsed_data['amount'],
+                subtotal=subtotal,
+                amount_paid=parsed_data.get('amount_paid', Decimal('0.00')),
                 status='Draft'
             )
 
@@ -110,9 +116,9 @@ def smart_input_processor(request):
             InvoiceItem.objects.create(
                 invoice=invoice,
                 product=product,
-                quantity=1,
-                unit_price=parsed_data['amount'],
-                total_price=parsed_data['amount']
+                quantity=quantity,
+                unit_price=unit_price,
+                total_price=subtotal
             )
 
             messages.success(request, f"Invoice #{invoice.invoice_number} successfully generated via YB AI!")
@@ -205,38 +211,71 @@ def public_invoice_detail(request, token):
 def invoice_detail(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
     
-    # Construct share links
+    public_link = request.build_absolute_uri(reverse('core:public_invoice_detail', args=[invoice.public_token]))
     customer_name = invoice.customer.name
     invoice_num = invoice.invoice_number
     total = f"N{invoice.total_amount:,.2f}"
     
     # WhatsApp: Format phone number (remove + and spaces)
     phone = invoice.customer.phone_number.replace('+', '').replace(' ', '').replace('-', '')
-    wa_msg = f"Hello {customer_name}, here is your invoice {invoice_num} from Yeedem Books. Total: {total}. Thank you for your business!"
+    wa_msg = f"Hello {customer_name}, here is your invoice {invoice_num} from Yeedem Books. View details here: {public_link}. Total: {total}. Thank you for your business!"
     wa_url = f"https://wa.me/{phone}?text={urllib.parse.quote(wa_msg)}"
     
     # Email
     email_subject = f"Invoice {invoice_num} from Yeedem Books"
-    email_body = f"Hello {customer_name},\n\nPlease find your invoice {invoice_num} for {total}.\n\nThank you for your business!"
+    email_body = f"Hello {customer_name},\n\nPlease find your invoice {invoice_num} for {total}.\n\nYou can view/download it at: {public_link}\n\nThank you for your business!"
     email_url = f"mailto:{invoice.customer.email or ''}?subject={urllib.parse.quote(email_subject)}&body={urllib.parse.quote(email_body)}"
     
     context = {
         'invoice': invoice,
         'wa_url': wa_url,
         'email_url': email_url,
+        'public_link': public_link,
     }
     return render(request, 'core/invoice_detail.html', context)
 
 @login_required
 def invoice_create(request):
     top_products = Product.objects.filter(user=request.user).annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
+    customers = Customer.objects.filter(user=request.user).order_by('name')
+    products = Product.objects.filter(user=request.user).order_by('name')
 
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             invoice = form.save(commit=False)
             invoice.user = request.user
+            
+            cust_name = form.cleaned_data['customer_name']
+            customer, _ = Customer.objects.get_or_create(
+                name=cust_name,
+                user=request.user,
+                defaults={'phone_number': '00000000000'}
+            )
+            invoice.customer = customer
             invoice.save()
+
+            prod_name = form.cleaned_data['product_name']
+            quantity = form.cleaned_data['quantity']
+            unit_price = invoice.subtotal / Decimal(str(quantity)) if quantity > 0 else Decimal('0.00')
+
+            product = Product.objects.filter(name__icontains=prod_name, user=request.user).first()
+            if not product:
+                product = Product.objects.create(
+                    name=prod_name,
+                    retail_price=unit_price,
+                    wholesale_price=unit_price,
+                    user=request.user
+                )
+
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                total_price=invoice.subtotal
+            )
+
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm(user=request.user)
@@ -244,20 +283,64 @@ def invoice_create(request):
     return render(request, 'core/invoice_create.html', {
         'form': form,
         'title': 'Create New Invoice',
-        'top_products': top_products
+        'top_products': top_products,
+        'customers': customers,
+        'products': products,
     })
 
 @login_required
 def invoice_edit(request, pk):
     invoice = get_object_or_404(Invoice, pk=pk, user=request.user)
+    top_products = Product.objects.filter(user=request.user).annotate(sales_count=Count('invoiceitem')).order_by('-sales_count')[:6]
+    customers = Customer.objects.filter(user=request.user).order_by('name')
+    products = Product.objects.filter(user=request.user).order_by('name')
+
     if request.method == 'POST':
         form = InvoiceForm(request.POST, request.FILES, instance=invoice, user=request.user)
         if form.is_valid():
-            invoice = form.save() # Calculation handled in models.py
+            invoice = form.save(commit=False)
+            
+            cust_name = form.cleaned_data['customer_name']
+            customer, _ = Customer.objects.get_or_create(
+                name=cust_name,
+                user=request.user,
+                defaults={'phone_number': '00000000000'}
+            )
+            invoice.customer = customer
+            invoice.save()
+
+            prod_name = form.cleaned_data['product_name']
+            quantity = form.cleaned_data['quantity']
+            unit_price = invoice.subtotal / Decimal(str(quantity)) if quantity > 0 else Decimal('0.00')
+
+            product = Product.objects.filter(name__icontains=prod_name, user=request.user).first()
+            if not product:
+                product = Product.objects.create(
+                    name=prod_name,
+                    retail_price=unit_price,
+                    wholesale_price=unit_price,
+                    user=request.user
+                )
+
+            invoice.invoiceitem_set.all().delete()
+            InvoiceItem.objects.create(
+                invoice=invoice,
+                product=product,
+                quantity=quantity,
+                unit_price=unit_price,
+                total_price=invoice.subtotal
+            )
+
             return redirect('core:invoice_detail', pk=invoice.pk)
     else:
         form = InvoiceForm(instance=invoice, user=request.user)
-    return render(request, 'core/invoice_create.html', {'form': form, 'title': f'Edit Invoice {invoice.invoice_number}'})
+    return render(request, 'core/invoice_create.html', {
+        'form': form,
+        'title': f'Edit Invoice {invoice.invoice_number}',
+        'top_products': top_products,
+        'customers': customers,
+        'products': products,
+    })
 
 def generate_invoice_pdf_response(request, invoice, watermark=False):
     from fpdf import FPDF
@@ -333,9 +416,20 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
     pdf.ln()
 
     pdf.set_font("Helvetica", size=10)
-    pdf.cell(140, 10, "General Services / Products", border=1)
-    pdf.cell(50, 10, f"N{invoice.subtotal:,.2f}", border=1, align='R')
-    pdf.ln(20)
+    items = list(invoice.invoiceitem_set.all())
+    if items:
+        for item in items:
+            desc = item.product.name
+            if item.quantity > 1:
+                desc += f" ({item.quantity} x N{item.unit_price:,.2f})"
+            pdf.cell(140, 10, desc, border=1)
+            pdf.cell(50, 10, f"N{item.total_price:,.2f}", border=1, align='R')
+            pdf.ln()
+    else:
+        pdf.cell(140, 10, "General Services / Products", border=1)
+        pdf.cell(50, 10, f"N{invoice.subtotal:,.2f}", border=1, align='R')
+        pdf.ln()
+    pdf.ln(10)
 
     # Totals
     pdf.set_x(120)
@@ -492,25 +586,30 @@ def onboarding(request):
     if request.method == 'POST':
         current_step = request.GET.get('step', 'welcome')
         
-        # Save onboarding data based on current step being submitted
-        if current_step == 'business_name':
-            business_name = request.POST.get('business_name', '').strip()
-            if business_name:
-                profile.business_name = business_name
+        if current_step == 'welcome':
+            choice = request.POST.get('setup_method', 'ai_setup')
+            step = choice
+        elif current_step == 'ai_setup':
+            desc_text = request.POST.get('business_description', '').strip()
+            from core.utils import parse_business_setup
+            parsed_data = parse_business_setup(desc_text)
+            if parsed_data:
+                profile.business_name = parsed_data['business_name']
+                profile.industry = parsed_data['industry']
+                profile.phone_number = parsed_data['phone_number']
+                profile.address = parsed_data['address']
+                profile.tin = parsed_data['tin']
                 profile.save()
-        elif current_step == 'industry':
-            industry = request.POST.get('industry', '').strip()
-            if industry:
-                profile.industry = industry
-                profile.save()
-
-        next_steps = {
-            'welcome': 'business_name',
-            'business_name': 'industry',
-            'industry': 'complete'
-        }
-        step = next_steps.get(current_step, 'complete')
-        
+            step = 'review'
+        elif current_step == 'review' or current_step == 'manual_setup':
+            profile.business_name = request.POST.get('business_name', '').strip()
+            profile.industry = request.POST.get('industry', 'other').strip()
+            profile.phone_number = request.POST.get('phone_number', '').strip()
+            profile.address = request.POST.get('address', '').strip()
+            profile.tin = request.POST.get('tin', '').strip()
+            profile.save()
+            step = 'complete'
+            
         if step == 'complete':
             if request.headers.get('HX-Request'):
                 response = HttpResponse("")
@@ -518,8 +617,25 @@ def onboarding(request):
                 return response
             return redirect('core:dashboard')
 
-    context = {'step': step}
+    context = {
+        'step': step,
+        'profile': profile,
+    }
     if request.headers.get('HX-Request') and not request.headers.get('HX-Boosted'):
         return render(request, f'core/fragments/onboarding_{step}.html', context)
     
     return render(request, 'core/onboarding.html', context)
+
+@login_required
+def update_customer_contact(request, pk):
+    customer = get_object_or_404(Customer, pk=pk, user=request.user)
+    if request.method == 'POST':
+        phone = request.POST.get('phone_number')
+        email = request.POST.get('email')
+        if phone is not None:
+            customer.phone_number = phone.strip()
+        if email is not None:
+            customer.email = email.strip()
+        customer.save()
+        return HttpResponse("Success")
+    return HttpResponse("Invalid Method", status=405)

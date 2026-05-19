@@ -1,0 +1,49 @@
+<div class="chat-bubble animate-fade-in text-left">
+    <h2 class="text-2xl font-extrabold text-primary mb-2 text-center">📝 Manual Business Setup</h2>
+    <p class="text-gray-600 mb-6 text-center text-sm">Please fill in your business details below to complete your profile.</p>
+    
+    <form hx-post="{% url 'core:onboarding' %}?step=manual_setup" hx-target="#onboarding-content" class="space-y-4">
+        {% csrf_token %}
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Business Name</label>
+            <input type="text" name="business_name" placeholder="e.g. Bades Electronics" 
+                   class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" required autofocus>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Industry Type</label>
+            <select name="industry" class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" required>
+                <option value="retail">Retail / Shop</option>
+                <option value="services">Professional Services</option>
+                <option value="manufacturing">Manufacturing</option>
+                <option value="other" selected>Other</option>
+            </select>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Phone Number</label>
+                <input type="text" name="phone_number" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" placeholder="e.g. +2348033333333">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">TIN (Tax ID Number)</label>
+                <input type="text" name="tin" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" placeholder="e.g. 12345678-0001">
+            </div>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Business Address</label>
+            <textarea name="address" rows="2" 
+                      class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm resize-none" placeholder="e.g. 12 Herbert Macaulay Way, Yaba, Lagos"></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-full justify-center mt-6">Save & Complete Setup</button>
+    </form>
+    
+    <div class="text-center mt-4">
+        <a href="" hx-get="{% url 'core:onboarding' %}?step=welcome" hx-target="#onboarding-content" class="text-xs text-gray-400 hover:text-primary transition-colors">← Back to selection</a>
+    </div>
+</div>

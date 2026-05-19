@@ -1,0 +1,49 @@
+<div class="chat-bubble animate-fade-in text-left">
+    <h2 class="text-2xl font-extrabold text-primary mb-2 text-center">🔎 Review Extracted Info</h2>
+    <p class="text-gray-600 mb-6 text-center text-sm">Here is what YB AI extracted. Adjust any field if needed, then click confirm to complete setup!</p>
+    
+    <form hx-post="{% url 'core:onboarding' %}?step=review" hx-target="#onboarding-content" class="space-y-4">
+        {% csrf_token %}
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Business Name</label>
+            <input type="text" name="business_name" value="{{ profile.business_name }}" 
+                   class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" required>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Industry Type</label>
+            <select name="industry" class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" required>
+                <option value="retail" {% if profile.industry == 'retail' %}selected{% endif %}>Retail / Shop</option>
+                <option value="services" {% if profile.industry == 'services' %}selected{% endif %}>Professional Services</option>
+                <option value="manufacturing" {% if profile.industry == 'manufacturing' %}selected{% endif %}>Manufacturing</option>
+                <option value="other" {% if profile.industry == 'other' %}selected{% endif %}>Other</option>
+            </select>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Phone Number</label>
+                <input type="text" name="phone_number" value="{{ profile.phone_number }}" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" placeholder="e.g. +2348033333333">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">TIN (Tax ID Number)</label>
+                <input type="text" name="tin" value="{{ profile.tin }}" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" placeholder="e.g. 12345678-0001">
+            </div>
+        </div>
+        
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Business Address</label>
+            <textarea name="address" rows="2" 
+                      class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm resize-none" placeholder="e.g. 12 Herbert Macaulay Way, Yaba, Lagos">{{ profile.address }}</textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary w-full justify-center mt-6">Looks Perfect! Save & Complete</button>
+    </form>
+    
+    <div class="text-center mt-4">
+        <a href="" hx-get="{% url 'core:onboarding' %}?step=ai_setup" hx-target="#onboarding-content" class="text-xs text-gray-400 hover:text-primary transition-colors">← Try another description</a>
+    </div>
+</div>

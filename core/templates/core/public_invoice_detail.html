@@ -1,4 +1,5 @@
 {% extends 'core/base.html' %}
+{% load core_extras %}
 
 {% block title %}Invoice {{ invoice.invoice_number }} | Yeedem Books{% endblock %}
 
@@ -31,12 +32,20 @@
                     <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
                     <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
                 </svg>
+                {% if invoice.user %}
                 <span class="text-xl font-extrabold text-primary">{{ invoice.user.profile.business_name|default:"Yeedem Books" }}</span>
+                {% else %}
+                <span class="text-xl font-extrabold text-primary">Yeedem Books</span>
+                {% endif %}
             </div>
+            {% if invoice.user %}
             <p class="text-sm text-gray-500 font-medium">{{ invoice.user.profile.address|default:"Lagos, Nigeria" }}</p>
             <p class="text-sm text-gray-500 font-medium">TIN: {{ invoice.user.profile.tin|default:"12345678-0001" }}</p>
             {% if invoice.user.profile.phone_number %}
                 <p class="text-sm text-gray-500 font-medium">Phone: {{ invoice.user.profile.phone_number }}</p>
+            {% endif %}
+            {% else %}
+            <p class="text-sm text-gray-500 font-medium">Lagos, Nigeria</p>
             {% endif %}
         </div>
         <div class="sm:text-right">
@@ -78,10 +87,22 @@
                 </tr>
             </thead>
             <tbody>
-                <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors">
+                {% for item in invoice.invoiceitem_set.all %}
+                <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors text-sm">
+                    <td class="py-5 px-6 font-bold text-primary">
+                        {{ item.product.name }}
+                        {% if item.quantity > 1 %}
+                        <span class="text-xs text-gray-400 font-normal ml-2">({{ item.quantity }} × ₦{{ item.unit_price|floatformat:2 }})</span>
+                        {% endif %}
+                    </td>
+                    <td class="py-5 px-6 text-right font-bold text-primary">₦{{ item.total_price|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr class="border-b border-gray-50 hover:bg-slate-50/50 transition-colors text-sm">
                     <td class="py-5 px-6 font-bold text-primary">General Services / Products</td>
                     <td class="py-5 px-6 text-right font-bold text-primary">₦{{ invoice.subtotal|floatformat:2 }}</td>
                 </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

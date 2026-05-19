@@ -10,9 +10,13 @@ class ProfileForm(forms.ModelForm):
         }
 
 class InvoiceForm(forms.ModelForm):
+    customer_name = forms.CharField(max_length=255, required=True, label="Customer Name")
+    product_name = forms.CharField(max_length=255, required=True, label="Product / Service Name")
+    quantity = forms.IntegerField(min_value=1, initial=1, required=True, label="Quantity")
+
     class Meta:
         model = Invoice
-        fields = ['customer', 'issue_date', 'expected_pay_date', 'subtotal', 'amount_paid', 'status']
+        fields = ['issue_date', 'expected_pay_date', 'subtotal', 'amount_paid', 'status']
         widgets = {
             'issue_date': forms.DateInput(attrs={'type': 'date'}),
             'expected_pay_date': forms.DateInput(attrs={'type': 'date'}),
@@ -21,8 +25,12 @@ class InvoiceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-        if user:
-            self.fields['customer'].queryset = Customer.objects.filter(user=user).order_by('name')
+        if self.instance and self.instance.pk:
+            self.fields['customer_name'].initial = self.instance.customer.name
+            first_item = self.instance.invoiceitem_set.first()
+            if first_item:
+                self.fields['product_name'].initial = first_item.product.name
+                self.fields['quantity'].initial = first_item.quantity
 
 
 class CustomerForm(forms.ModelForm):

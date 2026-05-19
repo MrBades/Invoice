@@ -37,7 +37,7 @@
                 <h3 class="text-xs font-bold text-blue-300 uppercase tracking-widest mb-4">Account Security</h3>
                 <p class="text-sm opacity-80 mb-4">Your account is secured with end-to-end encryption for all financial records.</p>
                 <div class="space-y-3">
-                    <button class="btn btn-primary w-full justify-center" style="background: rgba(255,255,255,0.1);">Change Password</button>
+                    <button class="btn btn-primary w-full justify-center" style="background: rgba(255,255,255,0.1); color: var(--primary);">Change Password</button>
                     <form action="{% url 'logout' %}" method="post" style="display: block;">
                         {% csrf_token %}
                         <button type="submit" class="btn w-full justify-center text-red-300 hover:text-white" style="background: rgba(255,0,0,0.1); border: 1px solid rgba(255,0,0,0.2);">Logout Session</button>

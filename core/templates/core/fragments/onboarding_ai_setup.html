@@ -1,0 +1,17 @@
+<div class="chat-bubble animate-fade-in text-left">
+    <h2 class="text-2xl font-extrabold text-primary mb-4 text-center">✨ Tell YB AI About Your Business</h2>
+    <p class="text-gray-600 mb-6 text-center text-sm">Paste your business card details, website description, or just type a short description below. I'll extract everything automatically!</p>
+    
+    <form hx-post="{% url 'core:onboarding' %}?step=ai_setup" hx-target="#onboarding-content">
+        {% csrf_token %}
+        <textarea name="business_description" rows="5" 
+                  placeholder="e.g. Bades Electronics, located at 12 Herbert Macaulay Way, Yaba, Lagos. Phone number is +2348033333333, and tax registration TIN is 12345678-0001. We sell phones and laptops."
+                  class="w-full p-4 rounded-xl border-2 border-secondary focus:border-primary outline-none mb-4 text-sm resize-none" required autofocus></textarea>
+        
+        <button type="submit" class="btn btn-primary w-full justify-center">✨ Parse with YB AI</button>
+    </form>
+    
+    <div class="text-center mt-4">
+        <a href="" hx-get="{% url 'core:onboarding' %}?step=welcome" hx-target="#onboarding-content" class="text-xs text-gray-400 hover:text-primary transition-colors">← Back to selection</a>
+    </div>
+</div>

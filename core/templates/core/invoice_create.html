@@ -16,41 +16,22 @@
             {% csrf_token %}
             {% for field in form %}
             <div class="form-group">
-                <div class="flex justify-between items-center mb-1">
-                    <label for="{{ field.id_for_label }}" style="margin-bottom: 0;">{{ field.label }}</label>
-                    {% if field.name == 'customer' %}
-                    <button type="button" id="toggle-new-customer" class="text-secondary text-sm font-bold hover:underline" onclick="toggleNewCustomerForm()">
-                        + Quick Add Walk-in
-                    </button>
-                    {% endif %}
-                </div>
+                <label for="{{ field.id_for_label }}" class="block text-xs font-bold text-gray-500 uppercase mb-1">{{ field.label }}</label>
+                
+                {% if field.name == 'customer_name' %}
+                <input type="text" name="customer_name" id="id_customer_name" list="customers-list" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm bg-white"
+                       placeholder="Search or type customer name..."
+                       value="{{ field.value|default_if_none:'' }}" required autocomplete="off">
+                
+                {% elif field.name == 'product_name' %}
+                <input type="text" name="product_name" id="id_product_name" list="products-list" 
+                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm bg-white"
+                       placeholder="Search or type product/service..."
+                       value="{{ field.value|default_if_none:'' }}" required autocomplete="off">
+                
+                {% else %}
                 {{ field }}
-
-                {% if field.name == 'customer' %}
-                <!-- Quick Add Walk-in Customer Panel -->
-                <div id="new-customer-form-container" class="hidden mt-4 p-4 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 space-y-4">
-                    <h4 class="font-bold text-sm text-primary">Quick Add Walk-in Customer</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="form-group mb-0">
-                            <label class="text-xs mb-1" style="margin-bottom: 0;">Full Name</label>
-                            <input type="text" id="quick-cust-name" name="quick_name" class="w-full p-2 border rounded-lg text-sm bg-white" placeholder="Customer Name">
-                        </div>
-                        <div class="form-group mb-0">
-                            <label class="text-xs mb-1" style="margin-bottom: 0;">Phone Number</label>
-                            <input type="text" id="quick-cust-phone" name="quick_phone" class="w-full p-2 border rounded-lg text-sm bg-white" placeholder="080XXXXXXXX">
-                        </div>
-                    </div>
-                    <button type="button" 
-                            hx-post="{% url 'core:quick_customer_create' %}" 
-                            hx-include="#quick-cust-name, #quick-cust-phone"
-                            hx-target="#id_customer" 
-                            hx-swap="outerHTML"
-                            hx-on::after-request="if(event.detail.successful) { toggleNewCustomerForm(); document.getElementById('quick-cust-name').value = ''; document.getElementById('quick-cust-phone').value = ''; }"
-                            class="btn text-xs py-2 px-4 w-auto"
-                            style="background: var(--secondary); color: var(--primary);">
-                        Create & Select
-                    </button>
-                </div>
                 {% endif %}
 
                 {% if field.errors %}
@@ -66,32 +47,76 @@
         </form>
     </div>
 
-    <script>
-        function toggleNewCustomerForm() {
-            const container = document.getElementById('new-customer-form-container');
-            if (container.classList.contains('hidden')) {
-                container.classList.remove('hidden');
-            } else {
-                container.classList.add('hidden');
-            }
-        }
+    <!-- Datalists for Search & Auto-complete -->
+    <datalist id="customers-list">
+        {% for customer in customers %}
+        <option value="{{ customer.name }}">
+        {% endfor %}
+    </datalist>
 
+    <datalist id="products-list">
+        {% for product in products %}
+        <option value="{{ product.name }}" data-price="{{ product.retail_price }}">
+        {% endfor %}
+    </datalist>
+
+    <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Focus and blur cleanup for numeric values
             const fields = [document.getElementById('id_subtotal'), document.getElementById('id_amount_paid')];
+            // Ensure zero values clear on first keystroke (covers browsers where focus may not fire)
+            const zeroClearHandler = function(e) {
+                const zeroVals = ['0', '0.00', '0.0'];
+                if (zeroVals.includes(this.value)) {
+                    // Clear the field; the pressed key will be inserted automatically
+                    this.value = '';
+                }
+            };
             fields.forEach(field => {
                 if (field) {
-                    field.addEventListener('focus', function() {
-                        if (this.value === '0' || this.value === '0.00' || this.value === '0.0') {
-                            this.value = '';
-                        }
-                    });
-                    field.addEventListener('blur', function() {
-                        if (this.value.trim() === '') {
-                            this.value = '0';
-                        }
-                    });
+                    field.addEventListener('keydown', zeroClearHandler);
                 }
             });
+
+
+            // Auto-populate price when product is selected
+            const prodInput = document.getElementById('id_product_name');
+            if (prodInput) {
+                prodInput.addEventListener('input', function() {
+                    const val = this.value;
+                    const option = document.querySelector(`#products-list option[value="${val}"]`);
+                    if (option) {
+                        const price = option.getAttribute('data-price');
+                        if (price) {
+                            const qtyInput = document.getElementById('id_quantity');
+                            const qty = qtyInput ? (parseInt(qtyInput.value) || 1) : 1;
+                            const subtotalInput = document.getElementById('id_subtotal');
+                            if (subtotalInput) {
+                                subtotalInput.value = (parseFloat(price) * qty).toFixed(2);
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Recalculate price when quantity changes
+            const qtyInput = document.getElementById('id_quantity');
+            if (qtyInput) {
+                qtyInput.addEventListener('input', function() {
+                    const prodVal = document.getElementById('id_product_name').value;
+                    const option = document.querySelector(`#products-list option[value="${prodVal}"]`);
+                    if (option) {
+                        const price = option.getAttribute('data-price');
+                        if (price) {
+                            const qty = parseInt(this.value) || 1;
+                            const subtotalInput = document.getElementById('id_subtotal');
+                            if (subtotalInput) {
+                                subtotalInput.value = (parseFloat(price) * qty).toFixed(2);
+                            }
+                        }
+                    }
+                });
+            }
         });
     </script>
 
@@ -100,7 +125,8 @@
         <h3 class="text-lg font-bold text-primary mb-4">Quick Add Popular Products</h3>
         <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {% for product in top_products %}
-            <div class="card p-4 text-center cursor-pointer hover:border-secondary transition-all" onclick="document.getElementById('id_subtotal').value = '{{ product.retail_price }}'">
+            <div class="card p-4 text-center cursor-pointer hover:border-secondary transition-all" 
+                 onclick="document.getElementById('id_product_name').value = '{{ product.name }}'; document.getElementById('id_subtotal').value = '{{ product.retail_price }}'; document.getElementById('id_quantity').value = '1';">
                 <p class="font-bold text-sm mb-1">{{ product.name }}</p>
                 <p class="text-secondary font-bold">₦{{ product.retail_price }}</p>
             </div>

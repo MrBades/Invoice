@@ -7,3 +7,4 @@ dj-database-url
 python-dotenv
 fpdf2
 Pillow
+google-generativeai
