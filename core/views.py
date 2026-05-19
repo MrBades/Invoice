@@ -639,3 +639,9 @@ def update_customer_contact(request, pk):
         customer.save()
         return HttpResponse("Success")
     return HttpResponse("Invalid Method", status=405)
+
+def terms(request):
+    return render(request, 'core/terms.html')
+
+def about(request):
+    return render(request, 'core/about.html')
