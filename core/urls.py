@@ -32,4 +32,6 @@ urlpatterns = [
     path('onboarding/', views.onboarding, name='onboarding'),
     path('profile/', views.profile_settings, name='profile_settings'),
     path('signup/', views.signup, name='signup'),
+    path('terms/', views.terms, name='terms'),
+    path('about/', views.about, name='about'),
 ]
