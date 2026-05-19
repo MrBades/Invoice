@@ -1,100 +1,97 @@
 import os
 import re
+import socket
 from decimal import Decimal
+
+def is_online(timeout=1.5):
+    """
+    Checks for active internet connectivity by attempting to reach Google's DNS.
+    This is fast and prevents hanging on API calls in poor network conditions.
+    """
+    try:
+        socket.setdefaulttimeout(timeout)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect(("8.8.8.8", 53))
+        return True
+    except (socket.error, Exception):
+        return False
+
+def clean_name(name):
+    """Helper to clean extracted names from common prepositions."""
+    name = name.strip()
+    name = re.sub(r'^(?:for|to|of|bought|bought\s+by)\s+', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\s+(?:for|to|of)$', '', name, flags=re.IGNORECASE)
+    return name.strip()
 
 def parse_smart_input(text):
     """
-    Parses dynamic shorthand and natural language text inputs into structured data dictionaries.
-    Supports extract of:
-    - Customer Name (e.g. Moses, Musa, Walk-in Customer)
-    - Product Name (e.g. garri, Rice, Bread)
-    - Subtotal/Amount (e.g. 20000, 5k)
-    - Amount Paid (e.g. paid 15000, paid 15k)
-    - Quantity (e.g. 5 bags of, 5, 10 kg)
+    Hybrid Parser:
+    1. Check Connectivity.
+    2. If Online & API Key exists -> Use Google GenAI SDK (Gemini).
+    3. If Offline or API fails -> Use Token-based Heuristic Fallback.
     """
     text = text.strip()
     if not text:
         return None
 
-    # Check for Gemini API key and use Generative AI if present
     api_key = os.environ.get("GEMINI_API_KEY")
-    if api_key:
+
+    # 1. Try Online AI Parsing if connected
+    if api_key and is_online():
         try:
-            import google.generativeai as genai
+            from google import genai
             import json
             
-            genai.configure(api_key=api_key)
-            model_name = "gemini-2.5-flash"
-            try:
-                model = genai.GenerativeModel(model_name)
-            except:
-                model_name = "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name)
-                
+            client = genai.Client(api_key=api_key)
+            model_id = "gemini-2.0-flash"
+
             prompt = (
-                "You are an expert financial parsing assistant for Nigerian MSMEs. Your task is to identify the intent of the user's input and extract structured data.\n\n"
-                "Intents:\n"
-                "1. \"invoice\": User is recording a sale/transaction.\n"
-                "2. \"query\": User is asking a question about their business (e.g., 'Who owes me?', 'How much did I sell today?').\n\n"
-                "Examples:\n"
-                "1. \"beans for pp 5000\" -> {\"intent\": \"invoice\", \"product_name\": \"beans\", \"customer_name\": \"pp\", \"amount\": 5000, \"amount_paid\": 0, \"quantity\": 1}\n"
-                "2. \"Moses bought 5 bags of garri for 20000 paid 15000\" -> {\"intent\": \"invoice\", \"product_name\": \"garri\", \"customer_name\": \"Moses\", \"amount\": 20000, \"amount_paid\": 15000, \"quantity\": 5}\n"
-                "3. \"How much is my total sales?\" -> {\"intent\": \"query\", \"query_type\": \"sales_total\", \"text\": \"How much is my total sales?\"}\n"
-                "4. \"Who owes me the most?\" -> {\"intent\": \"query\", \"query_type\": \"debt_top\", \"text\": \"Who owes me the most?\"}\n\n"
-                "Rules for 'invoice':\n"
-                "- product_name: The name of the product sold. Concise. E.g. \"beans\".\n"
-                "- amount: Total price. \"5k\" -> 5000.\n"
-                "- customer_name: Default to \"Walk-in Customer\".\n"
-                "- amount_paid: Deposit/payment.\n"
-                "- quantity: Default to 1.\n\n"
+                "You are an expert financial parsing assistant for Nigerian MSMEs. Identify the intent and extract structured data.\n"
+                "Intents: 'invoice' (transaction) or 'query' (business question).\n"
+                "Extract: product_name, customer_name, customer_phone, amount (total price), amount_paid, quantity.\n"
                 f"Input text: \"{text}\"\n\n"
-                "Return ONLY a raw JSON object, no markdown."
+                "Rules:\n"
+                "- amount: 5k -> 5000.\n"
+                "- customer_name: default 'Walk-in Customer'.\n"
+                "- quantity: default 1.\n"
+                "Return ONLY a raw JSON object."
             )
             
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = client.models.generate_content(
+                model=model_id,
+                contents=prompt,
+                config={'response_mime_type': 'application/json'}
             )
             
-            resp_text = response.text.strip()
-            if resp_text.startswith("```"):
-                resp_text = re.sub(r'^```(?:json)?\n', '', resp_text)
-                resp_text = re.sub(r'\n```$', '', resp_text).strip()
-                
-            data = json.loads(resp_text)
+            data = json.loads(response.text)
             intent = data.get('intent', 'invoice')
             
             if intent == 'query':
                 return {
                     'intent': 'query',
-                    'query_type': data.get('query_type'),
+                    'query_type': data.get('query_type', 'general'),
                     'text': data.get('text', text)
                 }
 
-            prod_name = data.get('product_name', 'General Goods') or 'General Goods'
-            parsed_amount = Decimal(str(data.get('amount', 0)))
-            cust_name = data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer'
-            parsed_paid = Decimal(str(data.get('amount_paid', 0)))
-            qty = int(data.get('quantity', 1))
-            
-            if parsed_amount == Decimal('0.00') and parsed_paid > Decimal('0.00'):
-                parsed_amount = parsed_paid
-                
-            if parsed_amount > Decimal('0.00'):
-                return {
-                    'intent': 'invoice',
-                    'product_name': prod_name,
-                    'amount': parsed_amount,
-                    'customer_name': cust_name,
-                    'amount_paid': parsed_paid,
-                    'quantity': qty
-                }
-        except Exception as e:
-            # Fall back to heuristic parsing on any error
+            return {
+                'intent': 'invoice',
+                'product_name': data.get('product_name', 'General Goods') or 'General Goods',
+                'amount': Decimal(str(data.get('amount', 0))),
+                'customer_name': data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer',
+                'customer_phone': data.get('customer_phone', ''),
+                'amount_paid': Decimal(str(data.get('amount_paid', 0))),
+                'quantity': int(data.get('quantity', 1))
+            }
+        except Exception:
             pass
 
-    # Heuristic fallback for basic queries
+    # 2. Offline Token-based Heuristic Fallback
+    return _parse_smart_input_offline(text)
+
+def _parse_smart_input_offline(text):
     text_lower = text.lower()
+
+    # Query detection
     if "total sales" in text_lower or "how much did i sell" in text_lower:
         return {'intent': 'query', 'query_type': 'sales_total', 'text': text}
     if "who owes" in text_lower or "debt" in text_lower:
@@ -112,15 +109,22 @@ def parse_smart_input(text):
         except:
             return Decimal('0')
 
+    # Extract Phone
+    phone = ''
+    phone_match = re.search(r'\b(?:\+?234|0)\d{9,11}\b', text)
+    if phone_match:
+        phone = phone_match.group(0)
+        text = text.replace(phone, ' ').strip()
+
     amount_paid = Decimal('0.00')
-    # 1. Extract paid amount if exists
+    # 1. Extract paid amount
     paid_match = re.search(r'\b(?:paid|paying|deposit|advance|payment)(?:\s+of)?\s*(?:₦|n|N)?\s*(\d+(?:[.,]\d+)?\s*[kK]?)\b', text, re.IGNORECASE)
     if paid_match:
         amount_paid = parse_numeric_val(paid_match.group(1))
         text = text[:paid_match.start()] + " " + text[paid_match.end():]
         text = re.sub(r'\s+', ' ', text).strip()
 
-    # 2. Extract transaction amount if exists
+    # 2. Extract transaction amount
     amount = Decimal('0.00')
     amount_match = re.search(r'\b(?:for|at|costing|price|total|value|worth)(?:\s+of)?\s*(?:₦|n|N)?\s*(\d+(?:[.,]\d+)?\s*[kK]?)\b', text, re.IGNORECASE)
     if amount_match:
@@ -128,7 +132,7 @@ def parse_smart_input(text):
         text = text[:amount_match.start()] + " " + text[amount_match.end():]
         text = re.sub(r'\s+', ' ', text).strip()
     else:
-        # Find any standalone number that is likely the price
+        # Find any standalone number
         all_nums = re.findall(r'\b(\d+(?:[.,]\d+)?\s*[kK]?)\b', text)
         if all_nums:
             price_candidate = None
@@ -165,7 +169,7 @@ def parse_smart_input(text):
             quantity = int(lead_qty_match.group(1))
             text = lead_qty_match.group(2).strip()
 
-    # 4. Determine Customer and Product Names
+    # 4. Customer and Product
     customer_name = "Walk-in Customer"
     product_name = ""
 
@@ -196,21 +200,12 @@ def parse_smart_input(text):
             else:
                 product_name = "General Goods"
 
-    def clean_name(name):
-        name = name.strip()
-        name = re.sub(r'^(?:for|to|of|bought|bought\s+by)\s+', '', name, flags=re.IGNORECASE)
-        name = re.sub(r'\s+(?:for|to|of)$', '', name, flags=re.IGNORECASE)
-        return name.strip()
-
     customer_name = clean_name(customer_name)
     product_name = clean_name(product_name)
 
-    if not product_name:
-        product_name = "General Goods"
-    if not customer_name:
-        customer_name = "Walk-in Customer"
+    if not product_name: product_name = "General Goods"
+    if not customer_name: customer_name = "Walk-in Customer"
 
-    # Validation: must have a non-zero amount, and the remaining text must contain at least some description (letters)
     if amount == Decimal('0.00') or not re.search(r'[a-zA-Z]', text):
         return None
 
@@ -219,63 +214,36 @@ def parse_smart_input(text):
         'product_name': product_name,
         'amount': amount,
         'customer_name': customer_name,
+        'customer_phone': phone,
         'amount_paid': amount_paid,
         'quantity': quantity
     }
 
-
 def parse_business_setup(text):
     """
-    Parses natural language business profiles into structured data fields:
-    - business_name
-    - industry (retail, services, manufacturing, other)
-    - phone_number
-    - address
-    - tin
+    Hybrid Business Setup Parser.
     """
     text = text.strip()
     if not text:
         return None
 
-    # Check for Gemini API key and use Generative AI if present
     api_key = os.environ.get("GEMINI_API_KEY")
-    if api_key:
+    if api_key and is_online():
         try:
-            import google.generativeai as genai
+            from google import genai
             import json
-            
-            genai.configure(api_key=api_key)
-            model_name = "gemini-2.5-flash"
-            try:
-                model = genai.GenerativeModel(model_name)
-            except:
-                model_name = "gemini-1.5-flash"
-                model = genai.GenerativeModel(model_name)
-                
+            client = genai.Client(api_key=api_key)
             prompt = (
-                "You are an expert business onboarding assistant. Your job is to extract business details from the user's description.\n\n"
-                f"User Description: \"{text}\"\n\n"
-                "Extract the following fields and return ONLY a valid JSON object:\n"
-                "- business_name: (string) The name of the business. Default to \"My Business\" if not found.\n"
-                "- industry: (string) Must be one of: \"retail\", \"services\", \"manufacturing\", or \"other\". Decide based on the description.\n"
-                "- phone_number: (string) The phone number of the business. Default to empty string if not found.\n"
-                "- address: (string) The address of the business. Default to empty string if not found.\n"
-                "- tin: (string) Tax Identification Number. Default to empty string if not found.\n\n"
-                "Return ONLY a raw JSON object, no markdown, no explanation."
+                "Extract business details from this description: '" + text + "'.\n"
+                "Return JSON: {business_name, industry, phone_number, address, tin}.\n"
+                "Industry must be: retail, services, manufacturing, or other."
             )
-            
-            response = model.generate_content(
-                prompt,
-                generation_config={"response_mime_type": "application/json"}
+            response = client.models.generate_content(
+                model="gemini-2.0-flash",
+                contents=prompt,
+                config={'response_mime_type': 'application/json'}
             )
-            
-            resp_text = response.text.strip()
-            if resp_text.startswith("```"):
-                resp_text = re.sub(r'^```(?:json)?\n', '', resp_text)
-                resp_text = re.sub(r'\n```$', '', resp_text).strip()
-                
-            data = json.loads(resp_text)
-            
+            data = json.loads(response.text)
             return {
                 'business_name': data.get('business_name', 'My Business') or 'My Business',
                 'industry': data.get('industry', 'other') or 'other',
@@ -283,86 +251,43 @@ def parse_business_setup(text):
                 'address': data.get('address', '') or '',
                 'tin': data.get('tin', '') or ''
             }
-        except Exception as e:
-            # Fall back to heuristic parsing on any error
+        except Exception:
             pass
 
-    # Heuristic/regex fallback:
-    # 1. Extract phone number
+    return _parse_business_setup_offline(text)
+
+def _parse_business_setup_offline(text):
     phone_match = re.search(r'\b(?:\+?234|0)\d{9,11}\b|\+?\d[\d\s-]{8,15}\d', text)
     phone = phone_match.group(0).strip() if phone_match else ''
     
-    # 2. Extract TIN
     tin_match = re.search(r'\b\d{8}-\d{4}\b|\b\d{8,12}\b', text)
-    tin = ''
-    if tin_match:
-        candidate = tin_match.group(0).strip()
-        if candidate != phone:
-            tin = candidate
-        else:
-            all_tins = re.findall(r'\b\d{8}-\d{4}\b|\b\d{8,12}\b', text)
-            for t in all_tins:
-                if t != phone:
-                    tin = t
-                    break
+    tin = tin_match.group(0).strip() if tin_match else ''
     
-    # 3. Extract Industry
     industry = 'other'
     text_lower = text.lower()
     retail_kws = ['shop', 'store', 'sell', 'retail', 'boutique', 'supermarket', 'merchant', 'dealer', 'market', 'goods', 'groceries', 'clothes', 'garri', 'rice', 'bread', 'food', 'provision']
     services_kws = ['consulting', 'consultant', 'services', 'agency', 'law', 'legal', 'clinic', 'hospital', 'repair', 'salon', 'barber', 'tech', 'software', 'teaching', 'school', 'design', 'creative', 'mechanic', 'electrician']
     mfg_kws = ['factory', 'manufacturing', 'manufacturer', 'production', 'produce', 'mill', 'plant', 'assembly', 'make', 'builder', 'bakery', 'farm', 'agriculture']
     
-    if any(kw in text_lower for kw in retail_kws):
-        industry = 'retail'
-    elif any(kw in text_lower for kw in services_kws):
-        industry = 'services'
-    elif any(kw in text_lower for kw in mfg_kws):
-        industry = 'manufacturing'
+    if any(kw in text_lower for kw in retail_kws): industry = 'retail'
+    elif any(kw in text_lower for kw in services_kws): industry = 'services'
+    elif any(kw in text_lower for kw in mfg_kws): industry = 'manufacturing'
 
-    # 4. Extract Address
     address = ''
     address_indicators = ['street', 'st', 'road', 'rd', 'way', 'avenue', 'ave', 'lane', 'ln', 'close', 'cl', 'crescent', 'cres', 'highway', 'hwy', 'plaza', 'mall', 'complex', 'lagos', 'abuja', 'ikeja', 'yaba', 'lekki', 'nigeria', 'no.', 'plot', 'suite']
     segments = re.split(r'[,.\n]', text)
-    address_parts = []
-    for seg in segments:
-        seg_clean = seg.strip()
-        if any(indicator in seg_clean.lower() for indicator in address_indicators):
-            if phone and phone in seg_clean:
-                seg_clean = seg_clean.replace(phone, '').strip()
-            if tin and tin in seg_clean:
-                seg_clean = seg_clean.replace(tin, '').strip()
-            if len(seg_clean) > 5:
-                address_parts.append(seg_clean)
-    if address_parts:
-        address = ', '.join(address_parts)
+    address_parts = [seg.strip() for seg in segments if any(ind in seg.lower() for ind in address_indicators) and len(seg.strip()) > 5]
+    if address_parts: address = ', '.join(address_parts)
     
-    # 5. Extract Business Name
     business_name = 'My Business'
-    name_patterns = [
-        r'(?:name is|called|company is|business is|shop is)\s+([A-Za-z0-9\s&]+?)(?:\b(?:at|located|phone|tin|we|i)\b|$)',
-        r'\b([A-Za-z0-9\s&]+?\b(?:Electronics|Enterprise|Ventures|Stores|Global|Ltd|Services|Holdings|Solutions|Hub|Bakery|Farms|Interprises))\b',
-    ]
-    for pattern in name_patterns:
-        m = re.search(pattern, text, re.IGNORECASE)
-        if m:
-            candidate = m.group(1).strip()
-            if len(candidate) > 2:
-                business_name = candidate
-                break
-    
-    if business_name == 'My Business':
-        words = text.split()
+    words = text.split()
+    if words:
         capitalized = [w for w in words[:5] if w[0].isupper() and w.lower() not in ['i', 'we', 'my', 'our', 'the', 'a', 'an']]
-        if capitalized:
-            business_name = ' '.join(capitalized)
-            business_name = re.sub(r'[^\w\s]', '', business_name).strip()
-        elif len(words) >= 2:
-            business_name = ' '.join(words[:2])
-            business_name = re.sub(r'[^\w\s]', '', business_name).strip()
+        if capitalized: business_name = ' '.join(capitalized)
+        else: business_name = ' '.join(words[:2])
 
     return {
-        'business_name': business_name or 'My Business',
+        'business_name': re.sub(r'[^\w\s]', '', business_name).strip() or 'My Business',
         'industry': industry,
         'phone_number': phone,
         'address': address,
@@ -371,28 +296,20 @@ def parse_business_setup(text):
 
 def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
     """
-    Generates personalized business insights using Gemini AI.
+    Generates personalized business insights. Checks connectivity first.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key:
-        return "Connect your Gemini API Key to unlock personalized AI business insights."
+    if not api_key or not is_online():
+        return "Connect your Gemini API Key and stay online to unlock personalized AI business insights."
 
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
-
+        from google import genai
+        client = genai.Client(api_key=api_key)
         prompt = (
-            "You are a professional business consultant for MSMEs in Nigeria. "
-            "Analyze the following business metrics and provide 3 concise, actionable insights or advice.\n\n"
-            f"Total Sales: N{sales_data}\n"
-            f"Total Outstanding Debt (Gbese): N{debt_data}\n"
-            f"Inventory Status: {inventory_data or 'Not tracked'}\n\n"
-            "Keep advice specific to the Nigerian context. Format as a bulleted list. Max 100 words."
+            f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
+            "Give 3 concise actionable tips. Max 60 words."
         )
-
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
         return response.text.strip()
     except Exception:
-        return "YB AI is currently optimizing your data. Please check back in a few minutes for new insights."
-
+        return "YB AI is currently offline. Check your connection for new insights."

@@ -106,14 +106,14 @@ class BasicFlowTest(TestCase):
         # Verify no invoice was created for this
         self.assertFalse(Invoice.objects.filter(subtotal=Decimal('0.00')).exists())
 
-    @patch('google.generativeai.GenerativeModel')
-    def test_smart_input_processor_with_ai(self, mock_gen_model):
-        from unittest.mock import patch as patch_dict
-        mock_model_instance = MagicMock()
+    @patch('google.genai.Client')
+    @patch('core.utils.is_online', return_value=True)
+    def test_smart_input_processor_with_ai(self, mock_online, mock_gen_client):
+        mock_client_instance = MagicMock()
         mock_response = MagicMock()
         mock_response.text = '{"product_name": "Garri", "amount": 20000, "customer_name": "Moses", "amount_paid": 15000, "quantity": 5}'
-        mock_model_instance.generate_content.return_value = mock_response
-        mock_gen_model.return_value = mock_model_instance
+        mock_client_instance.models.generate_content.return_value = mock_response
+        mock_gen_client.return_value = mock_client_instance
 
         with patch.dict('os.environ', {'GEMINI_API_KEY': 'fake_key'}):
             from core.utils import parse_smart_input
@@ -185,13 +185,14 @@ class BasicFlowTest(TestCase):
         self.assertEqual(res['tin'], '12345678-0001')
         self.assertIn('12 Herbert Macaulay Way', res['address'])
 
-    @patch('google.generativeai.GenerativeModel')
-    def test_parse_business_setup_with_ai(self, mock_gen_model):
-        mock_model_instance = MagicMock()
+    @patch('google.genai.Client')
+    @patch('core.utils.is_online', return_value=True)
+    def test_parse_business_setup_with_ai(self, mock_online, mock_gen_client):
+        mock_client_instance = MagicMock()
         mock_response = MagicMock()
         mock_response.text = '{"business_name": "Bades Electronics", "industry": "retail", "phone_number": "+2348033333333", "address": "12 Herbert Macaulay Way, Yaba, Lagos", "tin": "12345678-0001"}'
-        mock_model_instance.generate_content.return_value = mock_response
-        mock_gen_model.return_value = mock_model_instance
+        mock_client_instance.models.generate_content.return_value = mock_response
+        mock_gen_client.return_value = mock_client_instance
 
         with patch.dict('os.environ', {'GEMINI_API_KEY': 'fake_key'}):
             from core.utils import parse_business_setup
@@ -286,8 +287,3 @@ class BasicFlowTest(TestCase):
         self.assertEqual(item.product.name, 'Updated Product Item')
         self.assertEqual(item.quantity, 2)
         self.assertEqual(item.unit_price, Decimal('10000.00'))
-
-
-
-
-
