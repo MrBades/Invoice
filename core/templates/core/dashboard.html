@@ -34,6 +34,13 @@
         </form>
     </div>
 
+    <!-- AI Insights Section -->
+    <div hx-get="{% url 'core:ai_insights_fragment' %}" hx-trigger="load delay:1s" class="min-h-[100px]">
+        <div class="flex justify-center p-4">
+            <span class="loading-spinner"></span>
+        </div>
+    </div>
+
     <div class="stats-grid">
         <div class="stat-card">
             <div class="icon-bg">₦</div>

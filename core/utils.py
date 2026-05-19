@@ -32,22 +32,23 @@ def parse_smart_input(text):
                 model = genai.GenerativeModel(model_name)
                 
             prompt = (
-                "You are an expert financial parsing assistant. Your task is to parse shorthand transaction notes from Nigerian business owners and convert them into structured JSON invoices.\n\n"
-                "Input text can be shorthand or natural language.\n\n"
-                "Here are examples of how to parse various patterns:\n"
-                "1. \"beans for pp 5000\" -> {\"product_name\": \"beans\", \"customer_name\": \"pp\", \"amount\": 5000, \"amount_paid\": 0, \"quantity\": 1}\n"
-                "2. \"Moses bought 5 bags of garri for 20000 paid 15000\" -> {\"product_name\": \"garri\", \"customer_name\": \"Moses\", \"amount\": 20000, \"amount_paid\": 15000, \"quantity\": 5}\n"
-                "3. \"Rice 5k Musa\" -> {\"product_name\": \"Rice\", \"customer_name\": \"Musa\", \"amount\": 5000, \"amount_paid\": 0, \"quantity\": 1}\n"
-                "4. \"Yam to Bisi 3000 paid 2000\" -> {\"product_name\": \"Yam\", \"customer_name\": \"Bisi\", \"amount\": 3000, \"amount_paid\": 2000, \"quantity\": 1}\n"
-                "5. \"5 bags of garri for 20000\" -> {\"product_name\": \"garri\", \"customer_name\": \"Walk-in Customer\", \"amount\": 20000, \"amount_paid\": 0, \"quantity\": 5}\n\n"
-                "Rules:\n"
-                "- product_name: The name of the product sold. Keep it concise. E.g. \"beans\", \"garri\".\n"
-                "- amount: The total subtotal/price of the transaction. E.g. \"5k\" is 5000. If 5 bags of garri are bought for 20000, \"amount\" is 20000.\n"
-                "- customer_name: The name of the customer. Default to \"Walk-in Customer\" if not specified.\n"
-                "- amount_paid: The amount paid/deposit. Default to 0.\n"
-                "- quantity: The quantity of items sold. Default to 1.\n\n"
+                "You are an expert financial parsing assistant for Nigerian MSMEs. Your task is to identify the intent of the user's input and extract structured data.\n\n"
+                "Intents:\n"
+                "1. \"invoice\": User is recording a sale/transaction.\n"
+                "2. \"query\": User is asking a question about their business (e.g., 'Who owes me?', 'How much did I sell today?').\n\n"
+                "Examples:\n"
+                "1. \"beans for pp 5000\" -> {\"intent\": \"invoice\", \"product_name\": \"beans\", \"customer_name\": \"pp\", \"amount\": 5000, \"amount_paid\": 0, \"quantity\": 1}\n"
+                "2. \"Moses bought 5 bags of garri for 20000 paid 15000\" -> {\"intent\": \"invoice\", \"product_name\": \"garri\", \"customer_name\": \"Moses\", \"amount\": 20000, \"amount_paid\": 15000, \"quantity\": 5}\n"
+                "3. \"How much is my total sales?\" -> {\"intent\": \"query\", \"query_type\": \"sales_total\", \"text\": \"How much is my total sales?\"}\n"
+                "4. \"Who owes me the most?\" -> {\"intent\": \"query\", \"query_type\": \"debt_top\", \"text\": \"Who owes me the most?\"}\n\n"
+                "Rules for 'invoice':\n"
+                "- product_name: The name of the product sold. Concise. E.g. \"beans\".\n"
+                "- amount: Total price. \"5k\" -> 5000.\n"
+                "- customer_name: Default to \"Walk-in Customer\".\n"
+                "- amount_paid: Deposit/payment.\n"
+                "- quantity: Default to 1.\n\n"
                 f"Input text: \"{text}\"\n\n"
-                "Return ONLY a raw JSON object, no markdown, no explanation."
+                "Return ONLY a raw JSON object, no markdown."
             )
             
             response = model.generate_content(
@@ -61,7 +62,15 @@ def parse_smart_input(text):
                 resp_text = re.sub(r'\n```$', '', resp_text).strip()
                 
             data = json.loads(resp_text)
+            intent = data.get('intent', 'invoice')
             
+            if intent == 'query':
+                return {
+                    'intent': 'query',
+                    'query_type': data.get('query_type'),
+                    'text': data.get('text', text)
+                }
+
             prod_name = data.get('product_name', 'General Goods') or 'General Goods'
             parsed_amount = Decimal(str(data.get('amount', 0)))
             cust_name = data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer'
@@ -73,6 +82,7 @@ def parse_smart_input(text):
                 
             if parsed_amount > Decimal('0.00'):
                 return {
+                    'intent': 'invoice',
                     'product_name': prod_name,
                     'amount': parsed_amount,
                     'customer_name': cust_name,
@@ -82,6 +92,13 @@ def parse_smart_input(text):
         except Exception as e:
             # Fall back to heuristic parsing on any error
             pass
+
+    # Heuristic fallback for basic queries
+    text_lower = text.lower()
+    if "total sales" in text_lower or "how much did i sell" in text_lower:
+        return {'intent': 'query', 'query_type': 'sales_total', 'text': text}
+    if "who owes" in text_lower or "debt" in text_lower:
+        return {'intent': 'query', 'query_type': 'debt_top', 'text': text}
 
     def parse_numeric_val(val_str):
         val_str = val_str.lower().replace(',', '')
@@ -198,6 +215,7 @@ def parse_smart_input(text):
         return None
 
     return {
+        'intent': 'invoice',
         'product_name': product_name,
         'amount': amount,
         'customer_name': customer_name,
@@ -351,4 +369,30 @@ def parse_business_setup(text):
         'tin': tin
     }
 
+def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
+    """
+    Generates personalized business insights using Gemini AI.
+    """
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        return "Connect your Gemini API Key to unlock personalized AI business insights."
+
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        prompt = (
+            "You are a professional business consultant for MSMEs in Nigeria. "
+            "Analyze the following business metrics and provide 3 concise, actionable insights or advice.\n\n"
+            f"Total Sales: N{sales_data}\n"
+            f"Total Outstanding Debt (Gbese): N{debt_data}\n"
+            f"Inventory Status: {inventory_data or 'Not tracked'}\n\n"
+            "Keep advice specific to the Nigerian context. Format as a bulleted list. Max 100 words."
+        )
+
+        response = model.generate_content(prompt)
+        return response.text.strip()
+    except Exception:
+        return "YB AI is currently optimizing your data. Please check back in a few minutes for new insights."
 

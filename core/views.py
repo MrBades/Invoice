@@ -62,6 +62,40 @@ def smart_input_processor(request):
         parsed_data = parse_smart_input(smart_text)
 
         if parsed_data:
+            intent = parsed_data.get('intent', 'invoice')
+
+            if intent == 'query' and request.user.is_authenticated:
+                query_type = parsed_data.get('query_type')
+                query_text = parsed_data.get('text')
+
+                # Logic to answer business queries
+                invoices = Invoice.objects.filter(user=request.user)
+                if query_type == 'sales_total':
+                    total = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+                    msg = f"Your total sales to date is ₦{total:,.2f}."
+                elif query_type == 'debt_top':
+                    top_debtor = Customer.objects.filter(user=request.user).annotate(
+                        debt=Sum('invoice__total_amount') - Sum('invoice__amount_paid')
+                    ).order_by('-debt').first()
+                    if top_debtor and top_debtor.debt and top_debtor.debt > 0:
+                        msg = f"Your top debtor is {top_debtor.name}, owing ₦{top_debtor.debt:,.2f}."
+                    else:
+                        msg = "You have no outstanding debts from customers!"
+                else:
+                    # Generic AI advice for other queries
+                    from .utils import get_ai_business_insights
+                    total_sales = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+                    total_debt = total_sales - (invoices.aggregate(total=Sum('amount_paid'))['total'] or 0)
+                    msg = get_ai_business_insights(total_sales, total_debt)
+
+                messages.info(request, f"YB AI: {msg}")
+                url = reverse('core:dashboard')
+                if request.headers.get('HX-Request'):
+                    response = HttpResponse("")
+                    response['HX-Redirect'] = url
+                    return response
+                return redirect(url)
+
             # Check guest limit
             if not request.user.is_authenticated:
                 guest_ids = request.session.get('guest_invoice_ids', [])
@@ -645,3 +679,30 @@ def terms(request):
 
 def about(request):
     return render(request, 'core/about.html')
+
+from django.utils.html import format_html, escape
+from django.utils.safestring import mark_safe
+
+@login_required
+def ai_insights_fragment(request):
+    invoices = Invoice.objects.filter(user=request.user)
+    total_invoiced = invoices.aggregate(total=Sum('total_amount'))['total'] or 0
+    total_paid = invoices.aggregate(total=Sum('amount_paid'))['total'] or 0
+    total_debt = total_invoiced - total_paid
+
+    from .utils import get_ai_business_insights
+    insights = get_ai_business_insights(total_invoiced, total_debt)
+
+    # Escape AI output first to prevent XSS
+    escaped_insights = escape(insights)
+
+    # Convert markdown-style bullets to HTML safely
+    formatted_insights = escaped_insights.replace('\n- ', mark_safe('<br>• ')).replace('\n* ', mark_safe('<br>• '))
+    if formatted_insights.startswith('- '):
+        formatted_insights = mark_safe('• ') + formatted_insights[2:]
+    elif formatted_insights.startswith('* '):
+        formatted_insights = mark_safe('• ') + formatted_insights[2:]
+
+    return render(request, 'core/fragments/ai_insights.html', {
+        'insights': mark_safe(formatted_insights)
+    })

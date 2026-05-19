@@ -34,4 +34,5 @@ urlpatterns = [
     path('signup/', views.signup, name='signup'),
     path('terms/', views.terms, name='terms'),
     path('about/', views.about, name='about'),
+    path('ai-insights/', views.ai_insights_fragment, name='ai_insights_fragment'),
 ]
