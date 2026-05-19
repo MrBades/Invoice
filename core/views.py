@@ -108,10 +108,11 @@ def smart_input_processor(request):
 
             # Try to find customer
             cust_filter = {'user': request.user} if request.user.is_authenticated else {'user': None}
+            phone = parsed_data.get('customer_phone', '00000000000') or '00000000000'
             customer, _ = Customer.objects.get_or_create(
                 name=parsed_data['customer_name'],
                 **cust_filter,
-                defaults={'phone_number': '00000000000'} # Placeholder
+                defaults={'phone_number': phone}
             )
 
             # Try to find product
