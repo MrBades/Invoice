@@ -1,0 +1,81 @@
+{% load core_extras %}
+<!-- Minimalist Template -->
+<div class="card p-8 sm:p-16 bg-white relative overflow-hidden border-0 shadow-sm" style="font-family: 'Open Sans', sans-serif;">
+    <div class="flex justify-between items-center mb-24">
+        {% if user.profile.logo %}
+            <img src="{{ user.profile.logo.url }}" alt="Logo" class="h-12 w-auto grayscale contrast-125">
+        {% else %}
+            <span class="text-4xl font-light tracking-tighter text-gray-300">{{ user.profile.business_name|default:"Yeedem"|slice:":1"|upper }}</span>
+        {% endif %}
+        <div class="text-right">
+            <p class="text-sm font-black tracking-[0.4em] text-gray-900 uppercase">Invoice</p>
+            <p class="text-xs text-gray-400 mt-1">#{{ invoice.invoice_number }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-16 mb-24">
+        <div class="space-y-4">
+            <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">From</p>
+            <div class="text-sm font-bold text-gray-900">
+                <p class="text-lg font-black mb-2">{{ user.profile.business_name|default:"Yeedem Books" }}</p>
+                <p>{{ user.profile.address|default:"Lagos, Nigeria" }}</p>
+                <p>TIN: {{ user.profile.tin|default:"12345678-0001" }}</p>
+                {% if user.profile.phone_number %}<p>{{ user.profile.phone_number }}</p>{% endif %}
+            </div>
+            {% if not user.profile.logo %}
+                <p class="text-[9px] text-gray-300 italic">No logo uploaded</p>
+            {% endif %}
+        </div>
+        <div class="space-y-4 sm:text-right">
+            <p class="text-[10px] font-black uppercase tracking-widest text-gray-400">To</p>
+            <div class="text-sm font-bold text-gray-900">
+                <p class="text-lg font-black mb-2">{{ invoice.customer.name }}</p>
+                <p>{{ invoice.customer.phone_number }}</p>
+                {% if invoice.customer.email %}<p>{{ invoice.customer.email }}</p>{% endif %}
+            </div>
+        </div>
+    </div>
+
+    <table class="w-full mb-24">
+        <thead>
+            <tr class="border-b border-gray-100">
+                <th class="py-4 text-left text-[10px] font-black uppercase tracking-widest text-gray-400">Item</th>
+                <th class="py-4 text-right text-[10px] font-black uppercase tracking-widest text-gray-400">Qty</th>
+                <th class="py-4 text-right text-[10px] font-black uppercase tracking-widest text-gray-400">Price</th>
+                <th class="py-4 text-right text-[10px] font-black uppercase tracking-widest text-gray-400">Total</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-50">
+            {% for item in invoice.invoiceitem_set.all %}
+            <tr>
+                <td class="py-8 text-sm font-bold text-gray-900">{{ item.product.name }}</td>
+                <td class="py-8 text-right text-sm font-bold text-gray-500">{{ item.quantity }}</td>
+                <td class="py-8 text-right text-sm font-bold text-gray-500">₦{{ item.unit_price|floatformat:2 }}</td>
+                <td class="py-8 text-right text-sm font-black text-gray-900">₦{{ item.total_price|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="flex justify-end mb-24">
+        <div class="w-full sm:w-64 space-y-4">
+            <div class="flex justify-between text-xs font-bold text-gray-400">
+                <span>Subtotal</span>
+                <span class="text-gray-900">₦{{ invoice.subtotal|floatformat:2 }}</span>
+            </div>
+            <div class="flex justify-between text-xs font-bold text-gray-400">
+                <span>VAT (7.5%)</span>
+                <span class="text-gray-900">₦{{ invoice.vat_amount|floatformat:2 }}</span>
+            </div>
+            <div class="flex justify-between items-center pt-6 border-t border-gray-100">
+                <span class="text-xs font-black uppercase tracking-widest">Total</span>
+                <span class="text-2xl font-black text-gray-900">₦{{ invoice.total_amount|floatformat:2 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="border-t border-gray-100 pt-8 flex justify-between items-center">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Date: {{ invoice.issue_date }}</p>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Due: {{ invoice.expected_pay_date|default:invoice.issue_date }}</p>
+    </div>
+</div>

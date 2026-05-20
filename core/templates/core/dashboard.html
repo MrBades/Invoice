@@ -26,11 +26,14 @@
               hx-target="#invoice-list-body"
               hx-swap="afterbegin"
               hx-on::after-request="if(event.detail.successful) this.reset()"
-              class="smart-input-form" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+              class="smart-input-form space-y-4">
             {% csrf_token %}
-            <input type="text" name="smart_text" placeholder='Try typing "Rice 5k to Musa"'
-                   style="flex: 1; min-width: 250px; padding: 0.75rem 1rem; border-radius: 0.75rem; border: 2px solid var(--secondary); font-size: 1rem; outline: none;" required>
-            <button type="submit" class="btn btn-primary smart-submit-btn">Quick Invoice</button>
+            <div class="flex flex-wrap gap-4">
+                <textarea name="smart_text" rows="2" placeholder='Try typing something like "Sold 5 bags of rice to Musa for 40k each, paid 150k cash"'
+                       class="flex-1 min-w-[250px] p-4 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm resize-none" required></textarea>
+                <button type="submit" class="btn btn-primary self-end py-4 px-8">✨ YB AI Parse</button>
+            </div>
+            <p class="text-[10px] text-muted italic">Smart multi-item parsing powered by YB AI. Supports complex descriptions, amounts and quantities.</p>
         </form>
     </div>
 

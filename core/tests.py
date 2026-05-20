@@ -111,7 +111,7 @@ class BasicFlowTest(TestCase):
     def test_smart_input_processor_with_ai(self, mock_online, mock_gen_client):
         mock_client_instance = MagicMock()
         mock_response = MagicMock()
-        mock_response.text = '{"product_name": "Garri", "amount": 20000, "customer_name": "Moses", "amount_paid": 15000, "quantity": 5}'
+        mock_response.text = '{"items": [{"product_name": "Garri", "total_price": 20000, "quantity": 5, "unit_price": 4000}], "customer_name": "Moses", "amount_paid": 15000, "subtotal": 20000}'
         mock_client_instance.models.generate_content.return_value = mock_response
         mock_gen_client.return_value = mock_client_instance
 
@@ -120,11 +120,11 @@ class BasicFlowTest(TestCase):
             res = parse_smart_input("Moses bought 5 bags of garri for 20000 paid 15000")
             
             self.assertIsNotNone(res)
-            self.assertEqual(res['product_name'], 'Garri')
-            self.assertEqual(res['amount'], Decimal('20000.00'))
+            self.assertEqual(res['items'][0]['product_name'], 'Garri')
+            self.assertEqual(res['subtotal'], Decimal('20000.00'))
             self.assertEqual(res['customer_name'], 'Moses')
             self.assertEqual(res['amount_paid'], Decimal('15000.00'))
-            self.assertEqual(res['quantity'], 5)
+            self.assertEqual(res['items'][0]['quantity'], 5)
 
     def test_guest_pdf_watermark_vs_normal(self):
         # 1. Registered user's invoice PDF download (should not have watermark)

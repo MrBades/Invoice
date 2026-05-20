@@ -30,13 +30,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-#de+llm0($p)kg#a3wyun
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1 .railway.app invoice-three-tau.vercel.app yeedem.com invoice-three-tau.vercel.app/').split()
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1 .railway.app invoice-three-tau.vercel.app yeedem.com invoice-zu89.vercel.app').split()
 
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
     'https://invoice-three-tau.vercel.app',
     'https://yeedem.com',
-    'https://invoice-three-tau.vercel.app/', 
+    'https://invoice-zu89.vercel.app',
 ]
 
 
@@ -149,6 +149,9 @@ STORAGES = {
 }
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Gemini API Key
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 # Media files
 MEDIA_URL = "/media/"

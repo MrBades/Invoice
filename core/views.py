@@ -147,14 +147,44 @@ def smart_input_processor(request):
                 guest_ids.append(invoice.id)
                 request.session['guest_invoice_ids'] = guest_ids
 
-            # Create Invoice Item
-            InvoiceItem.objects.create(
-                invoice=invoice,
-                product=product,
-                quantity=quantity,
-                unit_price=unit_price,
-                total_price=subtotal
-            )
+            # Create Invoice Items
+            items = parsed_data.get('items')
+            if items:
+                # Remove placeholder if it exists (though subtotal is handled by invoice)
+                invoice.invoiceitem_set.all().delete()
+
+                for item in items:
+                    p_name = item.get('product_name', 'General Goods')
+                    p_qty = int(item.get('quantity', 1))
+                    p_unit = Decimal(str(item.get('unit_price', 0)))
+                    p_total = Decimal(str(item.get('total_price', 0)))
+
+                    if p_unit == 0 and p_total > 0 and p_qty > 0:
+                        p_unit = p_total / p_qty
+
+                    # Try to find/create product
+                    prod, _ = Product.objects.get_or_create(
+                        name=p_name,
+                        **prod_filter,
+                        defaults={'retail_price': p_unit, 'wholesale_price': p_unit}
+                    )
+
+                    InvoiceItem.objects.create(
+                        invoice=invoice,
+                        product=prod,
+                        quantity=p_qty,
+                        unit_price=p_unit,
+                        total_price=p_total or (p_qty * p_unit)
+                    )
+            else:
+                # Fallback to single item legacy logic
+                InvoiceItem.objects.create(
+                    invoice=invoice,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    total_price=subtotal
+                )
 
             messages.success(request, f"Invoice #{invoice.invoice_number} successfully generated via YB AI!")
 
@@ -381,6 +411,10 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
     from fpdf import FPDF
     import io
 
+    template = 'classic'
+    if request.user.is_authenticated:
+        template = request.user.profile.invoice_template
+
     # Create instance of FPDF class
     pdf = FPDF()
     pdf.add_page()
@@ -398,8 +432,18 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
 
     # Header
     pdf.set_font("Helvetica", 'B', 16)
-    pdf.set_text_color(16, 185, 129) # #10B981 (Emerald Green)
-    pdf.cell(0, 10, "Yeedem Books", ln=True)
+    if template == 'modern':
+        pdf.set_text_color(51, 204, 255) # Cyan
+    elif template == 'minimalist':
+        pdf.set_text_color(31, 41, 55) # Dark Gray
+    else:
+        pdf.set_text_color(16, 185, 129) # Emerald Green
+
+    biz_name = "Yeedem Books"
+    if request.user.is_authenticated:
+        biz_name = request.user.profile.business_name or "Yeedem Books"
+
+    pdf.cell(0, 10, biz_name, ln=True)
     pdf.set_font("Helvetica", size=10)
     pdf.set_text_color(102, 102, 102)
     pdf.cell(0, 5, "Lagos, Nigeria", ln=True)
@@ -409,7 +453,12 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
 
     # Invoice Title
     pdf.set_font("Helvetica", 'B', 24)
-    pdf.set_text_color(16, 185, 129)
+    if template == 'modern':
+        pdf.set_text_color(51, 204, 255)
+    elif template == 'minimalist':
+        pdf.set_text_color(31, 41, 55)
+    else:
+        pdf.set_text_color(16, 185, 129)
     pdf.cell(0, 15, "INVOICE", ln=True, align='R')
     pdf.set_font("Helvetica", size=12)
     pdf.set_text_color(51, 51, 51)
@@ -477,7 +526,12 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
 
     pdf.set_x(120)
     pdf.set_font("Helvetica", 'B', 12)
-    pdf.set_text_color(16, 185, 129)
+    if template == 'modern':
+        pdf.set_text_color(51, 204, 255)
+    elif template == 'minimalist':
+        pdf.set_text_color(31, 41, 55)
+    else:
+        pdf.set_text_color(16, 185, 129)
     pdf.cell(40, 10, "Total:")
     pdf.cell(30, 10, f"N{invoice.total_amount:,.2f}", align='R', ln=True)
 
@@ -634,6 +688,8 @@ def onboarding(request):
                 profile.phone_number = parsed_data['phone_number']
                 profile.address = parsed_data['address']
                 profile.tin = parsed_data['tin']
+                profile.contact_email = parsed_data.get('contact_email', '')
+                profile.primary_products = parsed_data.get('primary_products', '')
                 profile.save()
             step = 'review'
         elif current_step == 'review' or current_step == 'manual_setup':
@@ -642,6 +698,9 @@ def onboarding(request):
             profile.phone_number = request.POST.get('phone_number', '').strip()
             profile.address = request.POST.get('address', '').strip()
             profile.tin = request.POST.get('tin', '').strip()
+            profile.contact_email = request.POST.get('contact_email', '').strip()
+            profile.primary_products = request.POST.get('primary_products', '').strip()
+            profile.invoice_template = request.POST.get('invoice_template', 'classic').strip()
             profile.save()
             step = 'complete'
             
