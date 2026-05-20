@@ -12,10 +12,26 @@
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <!-- PWA -->
+    <!-- PWA & SEO -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#070840">
+
+    <!-- Icons -->
+    <link rel="icon" type="image/png" href="{% static 'logo.png' %}">
     <link rel="apple-touch-icon" href="{% static 'logo.png' %}">
+
+    <!-- Open Graph / Social Sharing (WhatsApp, etc) -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="Yeedem Books | AI-Powered Invoicing for MSMEs">
+    <meta property="og:description" content="Generate invoices in 30 seconds using YB AI. Optimized for Nigerian businesses and FIRS 2026 compliant.">
+    <meta property="og:image" content="{% static 'logo.png' %}">
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Yeedem Books">
+    <meta name="twitter:description" content="AI-Powered Invoicing for MSMEs.">
+    <meta name="twitter:image" content="{% static 'logo.png' %}">
 
     <style>
         #htmx-indicator {

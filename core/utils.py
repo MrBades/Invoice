@@ -1,6 +1,7 @@
 import os
 import re
 import socket
+import logging
 from decimal import Decimal
 from pydantic import BaseModel, Field
 
@@ -117,7 +118,8 @@ def parse_smart_input(text):
                 'amount_paid': Decimal(str(data.get('amount_paid', 0))),
                 'quantity': int(data.get('quantity', 1))
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"AI Parsing Error: {str(e)}")
             pass
 
     # 2. Offline Token-based Heuristic Fallback
@@ -357,8 +359,11 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
     Generates personalized business insights. Checks connectivity first.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key or not is_online():
-        return "Connect your Gemini API Key and stay online to unlock personalized AI business insights."
+    if not api_key:
+        return "Connect your Gemini API Key in settings to unlock personalized AI business insights."
+
+    if not is_online():
+        return "YB AI is currently offline. Please check your internet connection for new insights."
 
     try:
         from google import genai
@@ -372,5 +377,8 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
         )
         response = client.models.generate_content(model=model_id, contents=prompt)
         return response.text.strip()
-    except Exception:
-        return "YB AI is currently offline. Check your connection for new insights."
+    except Exception as e:
+        logger.error(f"Gemini AI Error: {str(e)}")
+        if "401" in str(e) or "API_KEY_INVALID" in str(e):
+            return "Your Gemini API Key appears to be invalid. Please check your configuration."
+        return "YB AI is experiencing high traffic. Please check back in a moment for your insights."
