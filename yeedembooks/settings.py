@@ -30,15 +30,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-#de+llm0($p)kg#a3wyun
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-# Force Django to accept your domains and ALL Vercel preview domains
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'yeedem.com',
-    'invoice-three-tau.vercel.app',
-    '*',  # ⬅️ This asterisk tells Django to accept ANY domain name (including Vercel's random preview URLs)
-]
-
+ALLOWED_HOSTS = ['*']
 
 #  Fixed Version:
 CSRF_TRUSTED_ORIGINS = [
