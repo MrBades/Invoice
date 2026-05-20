@@ -3,10 +3,10 @@
 set -o errexit
 
 echo "Installing requirements..."
-python3.12 -m pip install -r requirements.txt
+# Added --break-system-packages to bypass Vercel's uv environment block
+python3.12 -m pip install -r requirements.txt --break-system-packages
 
 echo "Running database migrations..."
-# This will build the core_invoice table in your Vercel Postgres DB
 python3.12 manage.py migrate --noinput
 
 echo "Collecting static files..."
