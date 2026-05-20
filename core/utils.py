@@ -3,61 +3,41 @@ import re
 import socket
 import logging
 from decimal import Decimal
-from pydantic import BaseModel, Field
 
-class SmartInputSchema(BaseModel):
-    intent: str = Field(description="The intent of the query: 'invoice' (if a customer bought something or we need to generate an invoice) or 'query' (if a business question, e.g. how much did I sell, who owes, debt).")
-    query_type: str = Field(default="general", description="If intent is query, query_type must be: 'sales_total', 'debt_top', or 'general'. Otherwise use 'general'.")
-    text: str = Field(default="", description="If intent is query, the original text or business question.")
-    product_name: str = Field(default="General Goods", description="If intent is invoice, the name of the product purchased.")
-    amount: float = Field(default=0.0, description="If intent is invoice, the transaction amount (total price). Standard amount paid/total cost.")
-    customer_name: str = Field(default="Walk-in Customer", description="If intent is invoice, the customer's name.")
-    customer_phone: str = Field(default="", description="If intent is invoice, the customer's phone number.")
-    amount_paid: float = Field(default=0.0, description="If intent is invoice, the amount paid by the customer so far.")
-    quantity: int = Field(default=1, description="If intent is invoice, the quantity of product purchased.")
-
-class BusinessSetupSchema(BaseModel):
-    business_name: str = Field(default="My Business", description="The business name.")
-    industry: str = Field(default="other", description="Must be one of: 'retail', 'services', 'manufacturing', or 'other'.")
-    phone_number: str = Field(default="", description="The business phone number.")
-    address: str = Field(default="", description="The business address.")
-    tin: str = Field(default="", description="The tax identification number (TIN).")
-
-import ssl
-import time
-
-_last_connectivity_check = 0
-_is_api_reachable = False
+logger = logging.getLogger(__name__)
 
 def is_online(timeout=2):
-    """Check internet connectivity by attempting an HTTP HEAD request to a lightweight endpoint.
-    Uses https://www.gstatic.com/generate_204 which returns a 204 No Content quickly.
-    Result is cached for 60 seconds.
     """
-    global _last_connectivity_check, _is_api_reachable
-    now = time.time()
-    if now - _last_connectivity_check < 60:
-        return _is_api_reachable
-    try:
-        import urllib.request
-        req = urllib.request.Request('https://www.gstatic.com/generate_204', method='HEAD')
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            _is_api_reachable = resp.status in (200, 204)
-    except Exception:
-        _is_api_reachable = False
-    _last_connectivity_check = now
-    return _is_api_reachable
+    Checks for active internet connectivity.
+    Uses multiple targets and methods to avoid false negatives.
+    """
+    targets = [
+        ("8.8.8.8", 53),      # Google DNS
+        ("google.com", 80),   # Web port
+        ("1.1.1.1", 53)       # Cloudflare DNS
+    ]
+
+    for host, port in targets:
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except (socket.timeout, socket.error):
+            continue
+        except Exception as e:
+            logger.debug(f"Connectivity check failed for {host}:{port} - {str(e)}")
+            continue
+    return False
 
 def clean_name(name):
     """Helper to clean extracted names from common prepositions."""
     name = name.strip()
-    name = re.sub(r'^(?:for|to|of|bought|bought\s+by|came\s+and|came\s+to|came|and|but)\s+', '', name, flags=re.IGNORECASE)
-    name = re.sub(r'\s+(?:for|to|of|and|but)$', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'^(?:for|to|of|bought|bought\s+by)\s+', '', name, flags=re.IGNORECASE)
+    name = re.sub(r'\s+(?:for|to|of)$', '', name, flags=re.IGNORECASE)
     return name.strip()
 
 def parse_smart_input(text):
     """
-    Hybrid Parser:
+    Hybrid Parser using Gemini for complex multi-item invoice parsing.
     1. Check Connectivity.
     2. If Online & API Key exists -> Use Google GenAI SDK (Gemini).
     3. If Offline or API fails -> Use Token-based Heuristic Fallback.
@@ -72,31 +52,28 @@ def parse_smart_input(text):
     if api_key and is_online():
         try:
             from google import genai
-            from google.genai import types
             import json
             
-            # Using http_options to specify a timeout of 10s to optimize for 3G speeds
-            client = genai.Client(api_key=api_key, http_options={'timeout': 10})
-            model_id = "gemini-2.5-flash"
+            client = genai.Client(api_key=api_key)
+            model_id = "gemini-1.5-flash"
 
             prompt = (
                 "You are an expert financial parsing assistant for Nigerian MSMEs. Identify the intent and extract structured data.\n"
-                "Intents: 'invoice' (transaction) or 'query' (business question).\n"
-                "Extract: product_name, customer_name, customer_phone, amount (total price), amount_paid, quantity.\n"
+                "Intents: 'invoice' (recording a sale) or 'query' (asking a business question).\n\n"
+                "For 'invoice', extract:\n"
+                "- customer_name (default: 'Walk-in Customer')\n"
+                "- customer_phone (if any)\n"
+                "- amount_paid (deposit or total paid)\n"
+                "- items: list of {product_name, quantity, unit_price, total_price}\n"
+                "- subtotal (sum of all item totals)\n\n"
                 f"Input text: \"{text}\"\n\n"
-                "Rules:\n"
-                "- amount: 5k -> 5000.\n"
-                "- customer_name: default 'Walk-in Customer'.\n"
-                "- quantity: default 1."
+                "Return ONLY a raw JSON object."
             )
             
             response = client.models.generate_content(
                 model=model_id,
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=SmartInputSchema,
-                )
+                config={'response_mime_type': 'application/json'}
             )
             
             data = json.loads(response.text)
@@ -109,14 +86,24 @@ def parse_smart_input(text):
                     'text': data.get('text', text)
                 }
 
+            # Normalize data for the view
+            items = data.get('items', [])
+            if not items and data.get('product_name'):
+                # Handle single-item legacy/simple format
+                items = [{
+                    'product_name': data.get('product_name'),
+                    'quantity': data.get('quantity', 1),
+                    'total_price': data.get('amount', 0),
+                    'unit_price': data.get('amount', 0) / (data.get('quantity') or 1) if data.get('amount') else 0
+                }]
+
             return {
                 'intent': 'invoice',
-                'product_name': data.get('product_name', 'General Goods') or 'General Goods',
-                'amount': Decimal(str(data.get('amount', 0))),
                 'customer_name': data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer',
                 'customer_phone': data.get('customer_phone', ''),
                 'amount_paid': Decimal(str(data.get('amount_paid', 0))),
-                'quantity': int(data.get('quantity', 1))
+                'subtotal': Decimal(str(data.get('subtotal', data.get('amount', 0)))),
+                'items': items
             }
         except Exception as e:
             logger.error(f"AI Parsing Error: {str(e)}")
@@ -124,7 +111,6 @@ def parse_smart_input(text):
 
     # 2. Offline Token-based Heuristic Fallback
     return _parse_smart_input_offline(text)
-
 
 def _parse_smart_input_offline(text):
     text_lower = text.lower()
@@ -196,20 +182,9 @@ def _parse_smart_input_offline(text):
 
     # 3. Extract quantity
     quantity = 1
-    number_words_map = {
-        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
-        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
-    }
-    qty_pattern = r'\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s*(?:bags?\s+of|bags?|pcs?|pieces?|cartons?|pkts?|packs?|items?|kg|liters?|units?)\b'
-    qty_match = re.search(qty_pattern, text, re.IGNORECASE)
+    qty_match = re.search(r'\b(\d+)\s*(?:bags?\s+of|bags?|pcs?|pieces?|cartons?|pkts?|packs?|items?|kg|liters?|units?)\b', text, re.IGNORECASE)
     if qty_match:
-        qty_str = qty_match.group(1).lower()
-        quantity = number_words_map.get(qty_str, None)
-        if quantity is None:
-            try:
-                quantity = int(qty_str)
-            except:
-                quantity = 1
+        quantity = int(qty_match.group(1))
         text = text[:qty_match.start()] + " " + text[qty_match.end():]
         text = re.sub(r'\s+', ' ', text).strip()
     else:
@@ -217,40 +192,33 @@ def _parse_smart_input_offline(text):
         if lead_qty_match:
             quantity = int(lead_qty_match.group(1))
             text = lead_qty_match.group(2).strip()
-        else:
-            # Check for standalone number words at the beginning
-            lead_word_qty_match = re.match(r'^(one|two|three|four|five|six|seven|eight|nine|ten)\s+([a-zA-Z].*)$', text, re.IGNORECASE)
-            if lead_word_qty_match:
-                quantity = number_words_map[lead_word_qty_match.group(1).lower()]
-                text = lead_word_qty_match.group(2).strip()
 
     # 4. Customer and Product
     customer_name = "Walk-in Customer"
     product_name = ""
 
-    verb_pattern = r'\b(bought|purchased|took|ordered|wants|got|buys|purchases|takes|buy|came\s+and\s+buy|came\s+to\s+buy|collected?|came\s+and\s+collected?)\b'
-    verb_match = re.search(verb_pattern, text, re.IGNORECASE)
+    verb_match = re.search(r'\b(bought|purchased|took|ordered|wants|got|buys|purchases|takes)\b', text, re.IGNORECASE)
     if verb_match:
         cust_part = text[:verb_match.start()].strip()
         prod_part = text[verb_match.end():].strip()
         if cust_part:
-            customer_name = clean_name(cust_part)
+            customer_name = cust_part
         if prod_part:
-            product_name = clean_name(prod_part)
+            product_name = prod_part
     else:
         split_match = re.search(r'\b(to|for)\b', text, re.IGNORECASE)
         if split_match:
             prod_part = text[:split_match.start()].strip()
             cust_part = text[split_match.end():].strip()
             if prod_part:
-                product_name = clean_name(prod_part)
+                product_name = prod_part
             if cust_part:
-                customer_name = clean_name(cust_part)
+                customer_name = cust_part
         else:
             words = text.split()
             if len(words) >= 2:
-                product_name = clean_name(words[0])
-                customer_name = clean_name(" ".join(words[1:]))
+                product_name = words[0]
+                customer_name = " ".join(words[1:])
             elif len(words) == 1:
                 product_name = words[0]
             else:
@@ -277,7 +245,7 @@ def _parse_smart_input_offline(text):
 
 def parse_business_setup(text):
     """
-    Hybrid Business Setup Parser.
+    Hybrid Business Setup Parser using Gemini for smart onboarding.
     """
     text = text.strip()
     if not text:
@@ -287,21 +255,25 @@ def parse_business_setup(text):
     if api_key and is_online():
         try:
             from google import genai
-            from google.genai import types
             import json
-            
-            # Using http_options to specify a timeout of 10s to optimize for 3G speeds
-            client = genai.Client(api_key=api_key, http_options={'timeout': 10})
-            model_id = "gemini-2.5-flash"
-            
-            prompt = f"Extract business details from this description: '{text}'"
+            client = genai.Client(api_key=api_key)
+            prompt = (
+                "You are an expert business consultant. Extract structured data from this informal business description:\n"
+                f"\"{text}\"\n\n"
+                "Return ONLY a raw JSON object with these keys:\n"
+                "- business_name\n"
+                "- industry (one of: 'retail', 'services', 'manufacturing', 'other')\n"
+                "- phone_number\n"
+                "- address\n"
+                "- tin (Tax ID, if mentioned)\n"
+                "- contact_email\n"
+                "- primary_products (a string with comma-separated products or services)\n"
+            )
+            # Using gemini-1.5-flash for JSON stability
             response = client.models.generate_content(
-                model=model_id,
+                model="gemini-1.5-flash",
                 contents=prompt,
-                config=types.GenerateContentConfig(
-                    response_mime_type="application/json",
-                    response_schema=BusinessSetupSchema,
-                )
+                config={'response_mime_type': 'application/json'}
             )
             data = json.loads(response.text)
             return {
@@ -309,9 +281,12 @@ def parse_business_setup(text):
                 'industry': data.get('industry', 'other') or 'other',
                 'phone_number': data.get('phone_number', '') or '',
                 'address': data.get('address', '') or '',
-                'tin': data.get('tin', '') or ''
+                'tin': data.get('tin', '') or '',
+                'contact_email': data.get('contact_email', '') or '',
+                'primary_products': data.get('primary_products', '') or '',
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"Business Setup Parsing Error: {str(e)}")
             pass
 
     return _parse_business_setup_offline(text)
@@ -367,15 +342,12 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
 
     try:
         from google import genai
-        # Using http_options to specify a timeout of 10s to optimize for 3G speeds
-        client = genai.Client(api_key=api_key, http_options={'timeout': 10})
-        model_id = "gemini-2.5-flash"
-        
+        client = genai.Client(api_key=api_key)
         prompt = (
             f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
             "Give 3 concise actionable tips. Max 60 words."
         )
-        response = client.models.generate_content(model=model_id, contents=prompt)
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         return response.text.strip()
     except Exception as e:
         logger.error(f"Gemini AI Error: {str(e)}")

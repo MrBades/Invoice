@@ -124,6 +124,11 @@ class Profile(models.Model):
         ('manufacturing', 'Manufacturing'),
         ('other', 'Other'),
     ]
+    TEMPLATE_CHOICES = [
+        ('classic', 'Classic'),
+        ('modern', 'Modern'),
+        ('minimalist', 'Minimalist'),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     business_name = models.CharField(max_length=255, blank=True)
     industry = models.CharField(max_length=100, choices=INDUSTRY_CHOICES, blank=True)
@@ -132,6 +137,9 @@ class Profile(models.Model):
     phone_number = models.CharField(max_length=20, blank=True)
     address = models.TextField(blank=True)
     tin = models.CharField(max_length=50, blank=True, verbose_name="Tax Identification Number")
+    primary_products = models.TextField(blank=True, help_text="Comma separated list of products/services")
+    contact_email = models.EmailField(blank=True, null=True)
+    invoice_template = models.CharField(max_length=20, choices=TEMPLATE_CHOICES, default='classic')
 
     def __str__(self):
         return f"Profile for {self.user.username}"

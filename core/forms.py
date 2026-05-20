@@ -4,9 +4,10 @@ from .models import Invoice, Customer, Product, Profile
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = Profile
-        fields = ['business_name', 'industry', 'phone_number', 'address', 'tin', 'profile_picture', 'logo']
+        fields = ['business_name', 'industry', 'phone_number', 'address', 'tin', 'profile_picture', 'logo', 'invoice_template', 'primary_products', 'contact_email']
         widgets = {
             'address': forms.Textarea(attrs={'rows': 3}),
+            'primary_products': forms.Textarea(attrs={'rows': 2, 'placeholder': 'e.g. Rice, Beans, Garri'}),
         }
 
 class InvoiceForm(forms.ModelForm):

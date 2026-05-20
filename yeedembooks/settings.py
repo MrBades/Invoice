@@ -151,6 +151,9 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Gemini API Key
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
 # Media files
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"

@@ -39,6 +39,27 @@
             <textarea name="address" rows="2" 
                       class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm resize-none" placeholder="e.g. 12 Herbert Macaulay Way, Yaba, Lagos">{{ profile.address }}</textarea>
         </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contact Email</label>
+            <input type="email" name="contact_email" value="{{ profile.contact_email|default:'' }}"
+                   class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm" placeholder="e.g. sales@yeedem.com">
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Primary Products/Services</label>
+            <textarea name="primary_products" rows="2"
+                      class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm resize-none" placeholder="e.g. Rice, Beans, Provision Goods">{{ profile.primary_products }}</textarea>
+        </div>
+
+        <div>
+            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Invoice Template</label>
+            <select name="invoice_template" class="w-full p-3 rounded-xl border-2 border-secondary focus:border-primary outline-none text-sm">
+                <option value="classic" {% if profile.invoice_template == 'classic' %}selected{% endif %}>Classic</option>
+                <option value="modern" {% if profile.invoice_template == 'modern' %}selected{% endif %}>Modern</option>
+                <option value="minimalist" {% if profile.invoice_template == 'minimalist' %}selected{% endif %}>Minimalist</option>
+            </select>
+        </div>
         
         <button type="submit" class="btn btn-primary w-full justify-center mt-6">Looks Perfect! Save & Complete</button>
     </form>

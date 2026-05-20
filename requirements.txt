@@ -8,3 +8,4 @@ python-dotenv
 fpdf2
 Pillow
 google-genai
+google-generativeai
