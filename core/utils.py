@@ -3,18 +3,19 @@ import re
 import socket
 import logging
 from decimal import Decimal
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
 def is_online(timeout=2):
     """
     Checks for active internet connectivity.
-    Uses multiple targets and methods to avoid false negatives.
+    Uses port 443 (HTTPS) as it's more reliable than port 53 (DNS) on PaaS like Railway.
     """
     targets = [
-        ("8.8.8.8", 53),      # Google DNS
-        ("google.com", 80),   # Web port
-        ("1.1.1.1", 53)       # Cloudflare DNS
+        ("google.com", 443),
+        ("1.1.1.1", 443),
+        ("8.8.8.8", 443)
     ]
 
     for host, port in targets:
@@ -23,8 +24,7 @@ def is_online(timeout=2):
                 return True
         except (socket.timeout, socket.error):
             continue
-        except Exception as e:
-            logger.debug(f"Connectivity check failed for {host}:{port} - {str(e)}")
+        except Exception:
             continue
     return False
 
@@ -46,14 +46,16 @@ def parse_smart_input(text):
     if not text:
         return None
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = getattr(settings, "GEMINI_API_KEY", None)
 
     # 1. Try Online AI Parsing if connected
-    if api_key and is_online():
+    connected = is_online()
+    if api_key and connected:
         try:
             from google import genai
             import json
             
+            logger.info(f"Attempting AI Parsing for text: {text[:50]}...")
             client = genai.Client(api_key=api_key)
             model_id = "gemini-1.5-flash"
 
@@ -108,6 +110,9 @@ def parse_smart_input(text):
         except Exception as e:
             logger.error(f"AI Parsing Error: {str(e)}")
             pass
+    else:
+        reason = "Missing API Key" if not api_key else "Offline Mode"
+        logger.warning(f"Falling back to regex parser. Reason: {reason}")
 
     # 2. Offline Token-based Heuristic Fallback
     return _parse_smart_input_offline(text)
@@ -251,7 +256,7 @@ def parse_business_setup(text):
     if not text:
         return None
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = getattr(settings, "GEMINI_API_KEY", None)
     if api_key and is_online():
         try:
             from google import genai
@@ -326,14 +331,16 @@ def _parse_business_setup_offline(text):
         'industry': industry,
         'phone_number': phone,
         'address': address,
-        'tin': tin
+        'tin': tin,
+        'contact_email': '',
+        'primary_products': ''
     }
 
 def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
     """
     Generates personalized business insights. Checks connectivity first.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = getattr(settings, "GEMINI_API_KEY", None)
     if not api_key:
         return "Connect your Gemini API Key in settings to unlock personalized AI business insights."
 

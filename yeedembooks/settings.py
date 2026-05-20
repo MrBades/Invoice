@@ -30,14 +30,13 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-#de+llm0($p)kg#a3wyun
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1 .railway.app invoice-three-tau.vercel.app yeedem.com invoice-zu89.vercel.app').split()
 
-#  Fixed Version:
 CSRF_TRUSTED_ORIGINS = [
     'https://*.railway.app',
-    'https://*.vercel.app',
     'https://invoice-three-tau.vercel.app',
     'https://yeedem.com',
+    'https://invoice-zu89.vercel.app',
 ]
 
 
