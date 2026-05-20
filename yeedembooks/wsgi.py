@@ -1,21 +1,21 @@
 import os
+import logging
 from django.core.wsgi import get_wsgi_application
 
-# Set the default settings module for the project
+# Set up simple fallback logs for Vercel
+logger = logging.getLogger(__name__)
+
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'yeedembooks.settings')
 
-# Initialize the WSGI application
+# Initialize standard application layout
 application = get_wsgi_application()
-app = application  # Crucial: Vercel needs this 'app' variable to find your project!
+app = application 
 
-# Serverless Database Auto-Migration Hook
+# Safe Execution: Force database schema migrations on a cold container boot
 try:
     from django.core.management import call_command
-    print("Initializing serverless database build synchronization...")
-    
-    # This automatically runs 'python manage.py migrate' every time Vercel deploys
+    print("Migrating fresh Vercel Postgres tables to cloud server instance...")
     call_command('migrate', interactive=False)
-    
-    print("Serverless database tables synced successfully!")
+    print("Database structure successfully applied!")
 except Exception as e:
-    print(f"Automatic migration hook failed: {e}")
+    logger.error(f"Critical Error: Serverless DB Auto-migration failed: {e}")
