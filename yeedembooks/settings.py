@@ -30,14 +30,18 @@ SECRET_KEY = os.environ.get('SECRET_KEY', "django-insecure-#de+llm0($p)kg#a3wyun
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
-    'yeedem.com',
-    'invoice-three-tau.vercel.app',
-    '.vercel.app',   # ⬅️ This dot allows ANY preview link Vercel throws at you
-    '.railway.app',  # ⬅️ This allows any railway deployment testing links
-]
+# 1. Read existing string from environment if it exists, or fall back to default string
+ALLOWED_HOSTS = os.environ.get(
+    'ALLOWED_HOSTS', 
+    'localhost 127.0.0.1 yeedem.com invoice-three-tau.vercel.app'
+).split()
+
+# 2. Force append wildcard domain matching directly in python code
+if '.vercel.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.vercel.app')
+if '.railway.app' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('.railway.app')
+
 
 #  Fixed Version:
 CSRF_TRUSTED_ORIGINS = [
