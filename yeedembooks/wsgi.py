@@ -1,17 +1,21 @@
-"""
-WSGI config for yeedembooks project.
-
-It exposes the WSGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/6.0/howto/deployment/wsgi/
-"""
-
 import os
-
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "yeedembooks.settings")
+# Set the default settings module for the project
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'yeedembooks.settings')
 
+# Initialize the WSGI application
 application = get_wsgi_application()
-app = application  # Vercel looks for 'app'
+app = application  # Crucial: Vercel needs this 'app' variable to find your project!
+
+# Serverless Database Auto-Migration Hook
+try:
+    from django.core.management import call_command
+    print("Initializing serverless database build synchronization...")
+    
+    # This automatically runs 'python manage.py migrate' every time Vercel deploys
+    call_command('migrate', interactive=False)
+    
+    print("Serverless database tables synced successfully!")
+except Exception as e:
+    print(f"Automatic migration hook failed: {e}")
