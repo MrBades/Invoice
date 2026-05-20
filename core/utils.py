@@ -1,20 +1,32 @@
 import os
 import re
 import socket
+import logging
 from decimal import Decimal
 
-def is_online(timeout=1.5):
+logger = logging.getLogger(__name__)
+
+def is_online(timeout=2):
     """
-    Checks for active internet connectivity by attempting to reach Google's DNS.
-    This is fast and prevents hanging on API calls in poor network conditions.
+    Checks for active internet connectivity.
+    Uses multiple targets and methods to avoid false negatives.
     """
-    try:
-        socket.setdefaulttimeout(timeout)
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect(("8.8.8.8", 53))
-        return True
-    except (socket.error, Exception):
-        return False
+    targets = [
+        ("8.8.8.8", 53),      # Google DNS
+        ("google.com", 80),   # Web port
+        ("1.1.1.1", 53)       # Cloudflare DNS
+    ]
+
+    for host, port in targets:
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except (socket.timeout, socket.error):
+            continue
+        except Exception as e:
+            logger.debug(f"Connectivity check failed for {host}:{port} - {str(e)}")
+            continue
+    return False
 
 def clean_name(name):
     """Helper to clean extracted names from common prepositions."""
@@ -43,7 +55,7 @@ def parse_smart_input(text):
             import json
             
             client = genai.Client(api_key=api_key)
-            model_id = "gemini-2.0-flash"
+            model_id = "gemini-1.5-flash"
 
             prompt = (
                 "You are an expert financial parsing assistant for Nigerian MSMEs. Identify the intent and extract structured data.\n"
@@ -82,7 +94,8 @@ def parse_smart_input(text):
                 'amount_paid': Decimal(str(data.get('amount_paid', 0))),
                 'quantity': int(data.get('quantity', 1))
             }
-        except Exception:
+        except Exception as e:
+            logger.error(f"AI Parsing Error: {str(e)}")
             pass
 
     # 2. Offline Token-based Heuristic Fallback
@@ -239,7 +252,7 @@ def parse_business_setup(text):
                 "Industry must be: retail, services, manufacturing, or other."
             )
             response = client.models.generate_content(
-                model="gemini-2.0-flash",
+                model="gemini-1.5-flash",
                 contents=prompt,
                 config={'response_mime_type': 'application/json'}
             )
@@ -299,8 +312,11 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
     Generates personalized business insights. Checks connectivity first.
     """
     api_key = os.environ.get("GEMINI_API_KEY")
-    if not api_key or not is_online():
-        return "Connect your Gemini API Key and stay online to unlock personalized AI business insights."
+    if not api_key:
+        return "Connect your Gemini API Key in settings to unlock personalized AI business insights."
+
+    if not is_online():
+        return "YB AI is currently offline. Please check your internet connection for new insights."
 
     try:
         from google import genai
@@ -309,7 +325,10 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
             f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
             "Give 3 concise actionable tips. Max 60 words."
         )
-        response = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
         return response.text.strip()
-    except Exception:
-        return "YB AI is currently offline. Check your connection for new insights."
+    except Exception as e:
+        logger.error(f"Gemini AI Error: {str(e)}")
+        if "401" in str(e) or "API_KEY_INVALID" in str(e):
+            return "Your Gemini API Key appears to be invalid. Please check your configuration."
+        return "YB AI is experiencing high traffic. Please check back in a moment for your insights."

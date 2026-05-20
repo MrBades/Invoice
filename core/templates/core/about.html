@@ -2,21 +2,34 @@
 {% block title %}About Yeedem Books{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto py-12 animate-fade-in">
-  <h1 class="text-4xl font-extrabold text-primary mb-8">About Yeedem Books</h1>
-  <p class="text-lg text-gray-700 mb-6">
-    Yeedem Books is a lightweight, mobile‑first invoicing platform built for MSMEs in Nigeria. It enables businesses to create, share, and manage invoices entirely offline or on slow 3G connections. All data is stored securely on the server and end‑to‑end encrypted for compliance with the 2026 FIRS data standards (TIN, 7.5% VAT, sequential invoice numbering, and NRS clearance status).
-  </p>
-  <p class="text-lg text-gray-700 mb-6">
-    The platform offers:
-    <ul class="list-disc list-inside ml-4">
-      <li>AI‑guided onboarding that asks only the essential business details.</li>
-      <li>Instant PDF generation with optional watermarks for guest invoices.</li>
-      <li>Dynamic WhatsApp and email sharing, automatically prompting for missing contact details.</li>
-      <li>HTMX‑driven UI components for a fast, reload‑free experience.</li>
-    </ul>
-  </p>
-  <p class="text-lg text-gray-700">
-    Our mission is to eliminate the friction of financial paperwork for small businesses, allowing them to focus on growth while staying compliant with Nigerian regulations.
-  </p>
+  <div class="text-center mb-12">
+    <h1 class="text-4xl font-extrabold text-primary mb-4">About Yeedem Books</h1>
+    <p class="text-xl text-muted">Empowering Nigerian MSMEs with AI-driven financial tools.</p>
+  </div>
+
+  <div class="grid md:grid-cols-2 gap-12 mb-16">
+    <div class="card p-8 bg-white border-l-4 border-secondary">
+      <h2 class="text-2xl font-bold text-primary mb-4">Our Mission</h2>
+      <p class="text-gray-700 leading-relaxed">
+        Yeedem Books is designed to bridge the digital gap for small and medium enterprises in Nigeria. Our goal is to make professional invoicing, debt tracking, and business insights accessible to every market trader and service provider, even in areas with fluctuating network coverage.
+      </p>
+    </div>
+    <div class="card p-8 bg-white border-l-4 border-success">
+      <h2 class="text-2xl font-bold text-primary mb-4">AI-First Approach</h2>
+      <p class="text-gray-700 leading-relaxed">
+        With YB AI, you can generate an invoice in under 30 seconds simply by typing what you sold. Our hybrid engine ensures that you can continue working even when offline, with smart local parsing and automatic syncing when you're back online.
+      </p>
+    </div>
+  </div>
+
+  <div class="card p-10 bg-primary text-white text-center">
+    <h2 class="text-3xl font-bold mb-6">FIRS 2026 Compliant</h2>
+    <p class="text-lg opacity-90 mb-8">
+      Yeedem Books is built from the ground up to comply with Nigerian financial standards, including automatic VAT calculation and sequential invoice numbering.
+    </p>
+    <div class="flex justify-center gap-6">
+        <a href="{% url 'core:signup' %}" class="btn bg-secondary text-white font-bold py-3 px-8 rounded-xl hover:scale-105 transition-all">Get Started Now</a>
+    </div>
+  </div>
 </div>
 {% endblock %}
