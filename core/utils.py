@@ -29,9 +29,9 @@ _last_connectivity_check = 0
 _is_api_reachable = False
 
 def is_online(timeout=2):
-    """Check internet connectivity by attempting an HTTPS request to a reliable site.
-    This is more robust on restrictive networks where raw socket connections may be blocked.
-    The result is cached for 60 seconds to avoid repeated latency.
+    """Check internet connectivity by attempting an HTTP HEAD request to a lightweight endpoint.
+    Uses https://www.gstatic.com/generate_204 which returns a 204 No Content quickly.
+    Result is cached for 60 seconds.
     """
     global _last_connectivity_check, _is_api_reachable
     now = time.time()
@@ -39,9 +39,9 @@ def is_online(timeout=2):
         return _is_api_reachable
     try:
         import urllib.request
-        req = urllib.request.Request('https://www.google.com', method='HEAD')
+        req = urllib.request.Request('https://www.gstatic.com/generate_204', method='HEAD')
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            _is_api_reachable = resp.status == 200
+            _is_api_reachable = resp.status in (200, 204)
     except Exception:
         _is_api_reachable = False
     _last_connectivity_check = now
