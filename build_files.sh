@@ -3,13 +3,16 @@
 set -o errexit
 
 echo "Installing requirements..."
-python3.12 -m pip install -r requirements.txt
+# Added --break-system-packages to bypass Vercel's uv environment block
+python3.12 -m pip install -r requirements.txt --break-system-packages
+
+echo "Running database migrations..."
+python3.12 manage.py migrate --noinput
 
 echo "Collecting static files..."
 python3.12 manage.py collectstatic --noinput --clear
 
-# Note: Vercel static build expects files in staticfiles_build (configured in vercel.json)
-# We move them there to be sure
+# Vercel static build expects files in staticfiles_build (configured in vercel.json)
 mkdir -p staticfiles_build
 cp -r staticfiles/* staticfiles_build/
 
