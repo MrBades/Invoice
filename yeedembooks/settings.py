@@ -37,7 +37,7 @@ CSRF_TRUSTED_ORIGINS = [
     'https://invoice-three-tau.vercel.app',
     'https://yeedem.com',
     'https://invoice-zu89.vercel.app',
-    'invoice-ktre9n5k1-danjumass-projects.vercel.app',
+    'https://invoice-ktre9n5k1-danjumass-projects.vercel.app',
 ]
 
 
