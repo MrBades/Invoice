@@ -3,6 +3,7 @@ import re
 import socket
 import logging
 from decimal import Decimal
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
@@ -10,11 +11,12 @@ def is_online(timeout=2):
     """
     Checks for active internet connectivity.
     Uses multiple targets and methods to avoid false negatives.
+    Railway often blocks port 53, so we prioritize port 443.
     """
     targets = [
-        ("8.8.8.8", 53),      # Google DNS
-        ("google.com", 80),   # Web port
-        ("1.1.1.1", 53)       # Cloudflare DNS
+        ("8.8.8.8", 443),      # Google
+        ("google.com", 443),   # Web port
+        ("1.1.1.1", 443)       # Cloudflare
     ]
 
     for host, port in targets:
@@ -46,10 +48,16 @@ def parse_smart_input(text):
     if not text:
         return None
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    online = is_online()
+
+    if not api_key:
+        logger.warning("GEMINI_API_KEY not found in settings.")
+    if not online:
+        logger.warning("is_online() returned False, skipping Gemini parsing.")
 
     # 1. Try Online AI Parsing if connected
-    if api_key and is_online():
+    if api_key and online:
         try:
             from google import genai
             import json
@@ -251,8 +259,10 @@ def parse_business_setup(text):
     if not text:
         return None
 
-    api_key = os.environ.get("GEMINI_API_KEY")
-    if api_key and is_online():
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
+    online = is_online()
+
+    if api_key and online:
         try:
             from google import genai
             import json
@@ -333,7 +343,7 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
     """
     Generates personalized business insights. Checks connectivity first.
     """
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = getattr(settings, 'GEMINI_API_KEY', None)
     if not api_key:
         return "Connect your Gemini API Key in settings to unlock personalized AI business insights."
 
