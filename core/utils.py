@@ -11,7 +11,7 @@ def is_online(timeout=2):
     """
     Checks for active internet connectivity.
     Uses multiple targets and methods to avoid false negatives.
-    Railway often blocks port 53, so we prioritize port 443.
+    Railway and Vercel often block port 53, so we prioritize port 443.
     """
     targets = [
         ("8.8.8.8", 443),      # Google
@@ -63,7 +63,8 @@ def parse_smart_input(text):
             import json
             
             client = genai.Client(api_key=api_key)
-            model_id = "gemini-1.5-flash"
+            # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
+            model_id = "gemini-2.5-flash"
 
             prompt = (
                 "You are an expert financial parsing assistant for Nigerian MSMEs. Identify the intent and extract structured data.\n"
@@ -279,9 +280,9 @@ def parse_business_setup(text):
                 "- contact_email\n"
                 "- primary_products (a string with comma-separated products or services)\n"
             )
-            # Using gemini-1.5-flash for JSON stability
+            # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
             response = client.models.generate_content(
-                model="gemini-1.5-flash",
+                model="gemini-2.5-flash",
                 contents=prompt,
                 config={'response_mime_type': 'application/json'}
             )
@@ -357,7 +358,8 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
             f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
             "Give 3 concise actionable tips. Max 60 words."
         )
-        response = client.models.generate_content(model="gemini-1.5-flash", contents=prompt)
+        # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
+        response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         return response.text.strip()
     except Exception as e:
         logger.error(f"Gemini AI Error: {str(e)}")
