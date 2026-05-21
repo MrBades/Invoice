@@ -5,7 +5,6 @@ import logging
 import json
 from decimal import Decimal
 from django.conf import settings
-# Pulled to top-level to establish a clean, error-free import execution sequence
 from google import genai
 
 logger = logging.getLogger(__name__)
@@ -43,9 +42,6 @@ def clean_name(name):
 def parse_smart_input(text):
     """
     Hybrid Parser using Gemini for complex multi-item invoice parsing.
-    1. Check Connectivity.
-    2. If Online & API Key exists -> Use Google GenAI SDK (Gemini).
-    3. If Offline or API fails -> Use Token-based Heuristic Fallback.
     """
     text = text.strip()
     if not text:
@@ -63,7 +59,6 @@ def parse_smart_input(text):
     if api_key and online:
         try:
             client = genai.Client(api_key=api_key)
-            # Production stable model to eliminate 404 endpoint routing blocks
             model_id = "gemini-2.5-flash"
 
             prompt = (
@@ -95,10 +90,9 @@ def parse_smart_input(text):
                     'text': data.get('text', text)
                 }
 
-            # Normalize data for the view
+            # Normalize items list
             items = data.get('items', [])
             if not items and data.get('product_name'):
-                # Handle single-item legacy/simple format
                 items = [{
                     'product_name': data.get('product_name'),
                     'quantity': data.get('quantity', 1),
@@ -106,7 +100,7 @@ def parse_smart_input(text):
                     'unit_price': data.get('amount', 0) / (data.get('quantity') or 1) if data.get('amount') else 0
                 }]
 
-            # Backward compatibility helper: mapping product_name explicitly to satisfy views.py line 120
+            # COMPATIBILITY LAYER: Safely extract a single product_name for core/views.py line 120
             first_product = "General Goods"
             if items and len(items) > 0:
                 first_product = items[0].get('product_name', 'General Goods')
@@ -115,7 +109,7 @@ def parse_smart_input(text):
 
             return {
                 'intent': 'invoice',
-                'product_name': first_product,  # Explicitly prevents views KeyError!
+                'product_name': first_product,  # <--- THIS STOPS THE KEYERROR
                 'customer_name': data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer',
                 'customer_phone': data.get('customer_phone', ''),
                 'amount_paid': Decimal(str(data.get('amount_paid', 0))),
@@ -132,7 +126,6 @@ def parse_smart_input(text):
 def _parse_smart_input_offline(text):
     text_lower = text.lower()
 
-    # Query detection
     if "total sales" in text_lower or "how much did i sell" in text_lower:
         return {'intent': 'query', 'query_type': 'sales_total', 'text': text}
     if "who owes" in text_lower or "debt" in text_lower:
@@ -150,7 +143,6 @@ def _parse_smart_input_offline(text):
         except:
             return Decimal('0')
 
-    # Extract Phone
     phone = ''
     phone_match = re.search(r'\b(?:\+?234|0)\d{9,11}\b', text)
     if phone_match:
@@ -158,14 +150,12 @@ def _parse_smart_input_offline(text):
         text = text.replace(phone, ' ').strip()
 
     amount_paid = Decimal('0.00')
-    # 1. Extract paid amount
     paid_match = re.search(r'\b(?:paid|paying|deposit|advance|payment)(?:\s+of)?\s*(?:₦|n|N)?\s*(\d+(?:[.,]\d+)?\s*[kK]?)\b', text, re.IGNORECASE)
     if paid_match:
         amount_paid = parse_numeric_val(paid_match.group(1))
         text = text[:paid_match.start()] + " " + text[paid_match.end():]
         text = re.sub(r'\s+', ' ', text).strip()
 
-    # 2. Extract transaction amount
     amount = Decimal('0.00')
     amount_match = re.search(r'\b(?:for|at|costing|price|total|value|worth)(?:\s+of)?\s*(?:₦|n|N)?\s*(\d+(?:[.,]\d+)?\s*[kK]?)\b', text, re.IGNORECASE)
     if amount_match:
@@ -173,7 +163,6 @@ def _parse_smart_input_offline(text):
         text = text[:amount_match.start()] + " " + text[amount_match.end():]
         text = re.sub(r'\s+', ' ', text).strip()
     else:
-        # Find any standalone number
         all_nums = re.findall(r'\b(\d+(?:[.,]\d+)?\s*[kK]?)\b', text)
         if all_nums:
             price_candidate = None
@@ -197,7 +186,6 @@ def _parse_smart_input_offline(text):
     if amount == Decimal('0.00') and amount_paid > Decimal('0.00'):
         amount = amount_paid
 
-    # 3. Extract quantity
     quantity = 1
     qty_match = re.search(r'\b(\d+)\s*(?:bags?\s+of|bags?|pcs?|pieces?|cartons?|pkts?|packs?|items?|kg|liters?|units?)\b', text, re.IGNORECASE)
     if qty_match:
@@ -210,7 +198,6 @@ def _parse_smart_input_offline(text):
             quantity = int(lead_qty_match.group(1))
             text = lead_qty_match.group(2).strip()
 
-    # 4. Customer and Product
     customer_name = "Walk-in Customer"
     product_name = ""
 
@@ -286,7 +273,6 @@ def parse_business_setup(text):
                 "- contact_email\n"
                 "- primary_products (a string with comma-separated products or services)\n"
             )
-            # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
             response = client.models.generate_content(
                 model="gemini-2.5-flash",
                 contents=prompt,
@@ -363,7 +349,6 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
             f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
             "Give 3 concise actionable tips. Max 60 words."
         )
-        # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
         response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
         return response.text.strip()
     except Exception as e:
