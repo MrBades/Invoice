@@ -2,8 +2,11 @@ import os
 import re
 import socket
 import logging
+import json
 from decimal import Decimal
 from django.conf import settings
+# Pulled to top-level to establish a clean, error-free import execution sequence
+from google import genai
 
 logger = logging.getLogger(__name__)
 
@@ -59,11 +62,8 @@ def parse_smart_input(text):
     # 1. Try Online AI Parsing if connected
     if api_key and online:
         try:
-            from google import genai
-            import json
-            
             client = genai.Client(api_key=api_key)
-            # Upgraded model to avoid legacy endpoint 404 blocks on Vercel
+            # Production stable model to eliminate 404 endpoint routing blocks
             model_id = "gemini-2.5-flash"
 
             prompt = (
@@ -106,8 +106,16 @@ def parse_smart_input(text):
                     'unit_price': data.get('amount', 0) / (data.get('quantity') or 1) if data.get('amount') else 0
                 }]
 
+            # Backward compatibility helper: mapping product_name explicitly to satisfy views.py line 120
+            first_product = "General Goods"
+            if items and len(items) > 0:
+                first_product = items[0].get('product_name', 'General Goods')
+            elif data.get('product_name'):
+                first_product = data.get('product_name')
+
             return {
                 'intent': 'invoice',
+                'product_name': first_product,  # Explicitly prevents views KeyError!
                 'customer_name': data.get('customer_name', 'Walk-in Customer') or 'Walk-in Customer',
                 'customer_phone': data.get('customer_phone', ''),
                 'amount_paid': Decimal(str(data.get('amount_paid', 0))),
@@ -265,8 +273,6 @@ def parse_business_setup(text):
 
     if api_key and online:
         try:
-            from google import genai
-            import json
             client = genai.Client(api_key=api_key)
             prompt = (
                 "You are an expert business consultant. Extract structured data from this informal business description:\n"
@@ -352,7 +358,6 @@ def get_ai_business_insights(sales_data, debt_data, inventory_data=None):
         return "YB AI is currently offline. Please check your internet connection for new insights."
 
     try:
-        from google import genai
         client = genai.Client(api_key=api_key)
         prompt = (
             f"As a business consultant for Nigerian MSMEs, analyze: Sales N{sales_data}, Debt N{debt_data}. "
