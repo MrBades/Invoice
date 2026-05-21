@@ -115,7 +115,8 @@ class BasicFlowTest(TestCase):
         mock_client_instance.models.generate_content.return_value = mock_response
         mock_gen_client.return_value = mock_client_instance
 
-        with patch.dict('os.environ', {'GEMINI_API_KEY': 'fake_key'}):
+        from django.test import override_settings
+        with override_settings(GEMINI_API_KEY='fake_key'):
             from core.utils import parse_smart_input
             res = parse_smart_input("Moses bought 5 bags of garri for 20000 paid 15000")
             
@@ -194,7 +195,8 @@ class BasicFlowTest(TestCase):
         mock_client_instance.models.generate_content.return_value = mock_response
         mock_gen_client.return_value = mock_client_instance
 
-        with patch.dict('os.environ', {'GEMINI_API_KEY': 'fake_key'}):
+        from django.test import override_settings
+        with override_settings(GEMINI_API_KEY='fake_key'):
             from core.utils import parse_business_setup
             res = parse_business_setup("My company description")
             
