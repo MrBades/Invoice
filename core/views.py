@@ -138,7 +138,10 @@ def smart_input_processor(request):
                 issue_date=timezone.now().date(),
                 subtotal=subtotal,
                 amount_paid=parsed_data.get('amount_paid', Decimal('0.00')),
-                status='Draft'
+                status='Draft',
+                trial_biz_name=request.POST.get('trial_biz_name') if not request.user.is_authenticated else None,
+                trial_biz_phone=request.POST.get('trial_biz_phone') if not request.user.is_authenticated else None,
+                trial_biz_address=request.POST.get('trial_biz_address') if not request.user.is_authenticated else None
             )
 
             # Track for guests
@@ -225,6 +228,7 @@ def landing_page(request):
         'total_debt': f"{total_debt:,.2f}",
         'recent_invoices': recent_invoices,
         'is_guest': True,
+        'trials_remaining': max(0, 2 - len(guest_ids)),
     }
     
     return render(request, 'core/landing_page.html', context)
@@ -439,15 +443,23 @@ def generate_invoice_pdf_response(request, invoice, watermark=False):
     else:
         pdf.set_text_color(16, 185, 129) # Emerald Green
 
-    biz_name = "Yeedem Books"
+    biz_name = invoice.trial_biz_name or "Yeedem Books"
     if request.user.is_authenticated:
         biz_name = request.user.profile.business_name or "Yeedem Books"
 
     pdf.cell(0, 10, biz_name, ln=True)
     pdf.set_font("Helvetica", size=10)
     pdf.set_text_color(102, 102, 102)
-    pdf.cell(0, 5, "Lagos, Nigeria", ln=True)
-    pdf.cell(0, 5, "TIN: 12345678-0001", ln=True)
+
+    biz_address = invoice.trial_biz_address or "Lagos, Nigeria"
+    if request.user.is_authenticated and request.user.profile.address:
+        biz_address = request.user.profile.address
+    pdf.cell(0, 5, biz_address, ln=True)
+
+    biz_phone = invoice.trial_biz_phone or "080-0000-0000"
+    if request.user.is_authenticated and request.user.profile.phone_number:
+        biz_phone = request.user.profile.phone_number
+    pdf.cell(0, 5, biz_phone, ln=True)
 
     pdf.ln(10)
 

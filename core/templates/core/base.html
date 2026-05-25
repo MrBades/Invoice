@@ -649,14 +649,41 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer>
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <p>&copy; 2026 <a href="https://yeedem.com/#team" class="font-bold hover:text-secondary">Yeedem Tech</a>. Optimized for MSMEs. Nigerian FIRS 2026 Compliant.</p>
-            <div class="mt-4 flex flex-wrap justify-center gap-4 text-xs">
-                <span>Business Identity: <a href="https://yeedem.com/#team" title="Yeedem Tech Corporate Identity" class="font-bold hover:text-secondary">Yeedem Tech</a></span>
-                <span>Team: <a href="https://yeedem.com/#team" title="The visionaries behind Yeedem Books" class="font-bold hover:text-secondary">Suleman & Sesan</a></span>
+    <footer class="bg-[#070840] text-white py-16">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-12 text-left">
+            <div>
+                <a href="/" class="logo mb-6">
+                    <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect width="32" height="32" rx="8" fill="var(--secondary)"/>
+                        <path d="M9 11C9 10.4477 9.44772 10 10 10H22C22.5523 10 23 10.4477 23 11V21C23 21.5523 22.5523 22 22 22H10C9.44772 22 9 21.5523 9 21V11Z" stroke="white" stroke-width="2"/>
+                    </svg>
+                    <span>Yeedem Books</span>
+                </a>
+                <p class="text-gray-400 text-xs leading-relaxed max-w-xs">
+                    Automated ledger tracking, instant FIRS tax receipt clearance formats, and real-time debt bookkeeping parameters for modern Nigerian merchant enterprises.
+                </p>
+                <p class="mt-8 text-gray-500 text-[10px]">© 2026 Yeedem Books. All rights reserved.</p>
             </div>
-            <p class="mt-4 text-xs opacity-50">A product of Yeedem Tech Innovation Labs</p>
+
+            <div>
+                <h4 class="text-[10px] font-black uppercase tracking-widest mb-6">QUICK PORTAL INDICES</h4>
+                <div class="flex flex-wrap gap-x-8 gap-y-4">
+                    <a href="{% url 'core:about' %}" class="text-xs font-bold hover:text-secondary transition-all">About Platform</a>
+                    <a href="{% url 'core:terms' %}" class="text-xs font-bold hover:text-secondary transition-all">Terms of Service</a>
+                    <a href="#" class="text-xs font-bold hover:text-secondary transition-all">Settings</a>
+                </div>
+                <p class="mt-8 text-gray-500 text-[10px]">A product of Yeedem Tech Innovation Labs</p>
+            </div>
+
+            <div class="md:text-right flex flex-col md:items-end">
+                <div class="inline-flex items-center gap-2 px-4 py-2 bg-emerald-950/30 border border-emerald-500/20 rounded-full mb-6">
+                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">VERIFIABLY SECURE ENCRYPTION (SSL)</span>
+                </div>
+                <div class="text-[10px] font-bold text-gray-500 uppercase tracking-[0.2em]">
+                    SUITE BUILD v1.5 • SECURE LEDGER
+                </div>
+            </div>
         </div>
     </footer>
 
