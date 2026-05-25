@@ -1,108 +1,219 @@
 {% extends 'core/base.html' %}
+{% load static %}
 
-{% block title %}Yeedem Books | Intelligent Invoicing for MSMEs{% endblock %}
+{% block title %}Yeedem Books | Smart Invoice Engine{% endblock %}
 
 {% block content %}
-<div class="animate-fade-in" x-data="{ showLoginModal: false }">
-    <!-- Hero Section -->
-    <div class="text-center mb-12">
-        <h1 class="text-4xl md:text-5xl font-extrabold mb-4" style="color: var(--primary);">Intelligent Invoicing for MSMEs</h1>
-        <p class="text-xl text-gray-600 max-w-2xl mx-auto">Create beautiful, FIRS-compliant invoices in seconds using just plain text. No complex forms required. Test it out right now!</p>
-    </div>
+<div class="animate-fade-in max-w-5xl mx-auto" x-data="{ activeTab: 'auto', showLoginModal: false, manual_customer: '', manual_product: '', manual_amount: '', manual_paid: '' }">
 
-    <!-- Smart Input Bar -->
-    <div class="card" style="margin-bottom: 2rem; padding: 2rem; background: var(--glass); border: 2px solid var(--secondary); box-shadow: 0 20px 25px -5px rgba(51, 204, 255, 0.1);">
-        <h2 class="text-xl font-bold mb-4" style="color: var(--primary);">✨ Smart Invoice Engine (Fuse Mode)</h2>
-        <p class="mb-4 text-gray-600">You can create up to 2 trial invoices without an account. Try typing something natural.</p>
-        <form hx-post="{% url 'core:smart_input_processor' %}"
-              hx-on:htmx:before-request="document.getElementById('smart-btn-text').classList.add('hidden'); document.getElementById('smart-btn-spinner').classList.remove('hidden');"
-              hx-on:htmx:after-request="document.getElementById('smart-btn-text').classList.remove('hidden'); document.getElementById('smart-btn-spinner').classList.add('hidden');"
-              class="smart-input-form flex flex-wrap gap-4" style="align-items: stretch;">
-            {% csrf_token %}
-            <input type="text" name="smart_text" placeholder='Try typing: "Rice 5k to Musa"'
-                   class="flex-1 p-4 rounded-xl text-lg outline-none" style="min-width: 250px; border: 2px solid var(--primary); transition: all 0.3s;" required>
-            <button type="submit" class="btn btn-primary text-lg px-8 rounded-xl shadow-lg hover:shadow-xl transition-all">
-                <span id="smart-btn-text">Generate Magic Invoice</span>
-                <span id="smart-btn-spinner" class="loading-spinner hidden" style="width: 20px; height: 20px; border-top-color: white;"></span>
-            </button>
-        </form>
-    </div>
-
-    {% if recent_invoices %}
-    <div class="section-header mt-12">
-        <h2>Your Trial Invoices</h2>
-        <button @click="showLoginModal = true" class="btn" style="background: var(--primary); color: white;">View Full History</button>
-    </div>
-
-    <div class="card">
-        <div class="table-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Invoice #</th>
-                        <th>Customer</th>
-                        <th>Date</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for invoice in recent_invoices %}
-                    <tr class="animate-fade-in cursor-pointer hover:bg-gray-50" onclick="window.location.href='{% url 'core:public_invoice_detail' invoice.public_token %}'">
-                        <td style="color: var(--primary); font-weight: 700;">{{ invoice.invoice_number }}</td>
-                        <td>{{ invoice.customer.name }}</td>
-                        <td>{{ invoice.issue_date }}</td>
-                        <td>₦{{ invoice.total_amount }}</td>
-                        <td>
-                            <span class="badge {% if invoice.status == 'Paid' %}badge-success{% else %}badge-warning{% endif %}">
-                                {{ invoice.status }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+    <!-- Hero Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <div>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-wider mb-3">
+                ⚡ LIVE INTERACTIVE SANDBOX
+            </span>
+            <h1 class="text-3xl md:text-4xl font-extrabold text-[#070840]">Smart Invoice Engine (Fuse Mode)</h1>
+        </div>
+        <div class="text-gray-400 italic text-sm">
+            {{ trials_remaining }} Free Trials Remaining
         </div>
     </div>
-    {% endif %}
 
-    <!-- Login/Signup Modal -->
-    <div x-show="showLoginModal" 
-         class="fixed inset-0 z-[2000] flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         style="display: none;">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4" @click.away="showLoginModal = false">
-            <div class="text-center mb-6">
-                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
+    <p class="text-gray-500 mb-8 max-w-4xl">
+        Test the live compiler below! Type an order query (e.g., <span class="text-blue-500">6 sacks of flour to Alao for 32k each, paid 120k</span>) or click the <strong>Manual</strong> tab to input details manually. Click "Commit Ledger" to instantly download your trial receipt.
+    </p>
+
+    <form hx-post="{% url 'core:smart_input_processor' %}"
+          hx-indicator="#htmx-indicator"
+          class="space-y-6">
+        {% csrf_token %}
+
+        <!-- Trial Invoice Headers Section -->
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 md:p-8 shadow-sm">
+            <div class="flex items-center gap-2 mb-6">
+                <div class="w-2 h-2 rounded-full bg-blue-500"></div>
+                <h2 class="text-[10px] font-black text-[#070840] uppercase tracking-widest">ENTER YOUR COMPANY DETAILS (TRIAL INVOICE HEADERS)</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="form-group mb-0">
+                    <label class="text-[10px] text-gray-400 font-black uppercase mb-1">BUSINESS NAME</label>
+                    <input type="text" name="trial_biz_name" placeholder="e.g. ALABA FLOUR DEPOT"
+                           class="w-full px-4 py-3 rounded-lg border border-gray-100 bg-gray-50 text-sm focus:bg-white transition-all outline-none">
                 </div>
-                <h2 class="text-2xl font-bold" style="color: var(--primary);">Unlock Full Access</h2>
-                <p class="text-gray-600 mt-2">Create a free account to view long-term transaction history, save unlimited invoices, and track your business growth.</p>
+                <div class="form-group mb-0">
+                    <label class="text-[10px] text-gray-400 font-black uppercase mb-1">PHONE NUMBER</label>
+                    <input type="text" name="trial_biz_phone" placeholder="e.g. +234 812-345-6789"
+                           class="w-full px-4 py-3 rounded-lg border border-gray-100 bg-gray-50 text-sm focus:bg-white transition-all outline-none">
+                </div>
+                <div class="form-group mb-0">
+                    <label class="text-[10px] text-gray-400 font-black uppercase mb-1">LOCATION ADDRESS</label>
+                    <input type="text" name="trial_biz_address" placeholder="e.g. Shop 4, SME Complex, Lagos"
+                           class="w-full px-4 py-3 rounded-lg border border-gray-100 bg-gray-50 text-sm focus:bg-white transition-all outline-none">
+                </div>
             </div>
-            
-            <div class="flex flex-col gap-4">
-                <a href="{% url 'core:signup' %}" class="btn w-full justify-center text-lg shadow-md" style="background: var(--secondary); color: var(--primary);">Create Free Account</a>
-                <a href="{% url 'login' %}" class="btn w-full justify-center text-lg bg-gray-100 hover:bg-gray-200 text-gray-800 shadow-sm border border-gray-200">Log In</a>
-                <button @click="showLoginModal = false" class="text-gray-500 hover:text-gray-800 text-sm mt-2">Maybe Later</button>
+
+            <p class="mt-6 text-[10px] text-gray-400 italic">
+                * The dynamic details typed above will instantly overwrite the default layout template headers on your compiled PDF.
+            </p>
+        </div>
+
+        <!-- Smart Input Container -->
+        <div class="bg-[#070840] rounded-3xl p-1 shadow-2xl">
+            <!-- Tabs -->
+            <div class="flex items-center p-3 gap-2">
+                <button type="button" @click="activeTab = 'auto'" :class="activeTab === 'auto' ? 'bg-[#33CCFF] text-white' : 'text-gray-400 hover:text-white'"
+                        class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all text-sm">
+                    ✨ Automatic
+                </button>
+                <button type="button" @click="activeTab = 'manual'" :class="activeTab === 'manual' ? 'bg-[#33CCFF] text-white' : 'text-gray-400 hover:text-white'"
+                        class="flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold transition-all text-sm">
+                    📝 Manual Input
+                </button>
+                <div class="ml-auto w-2 h-2 rounded-full bg-emerald-500 mr-4"></div>
+            </div>
+
+            <div class="bg-white rounded-[2rem] p-6 md:p-8 m-1">
+                <!-- Automatic Tab Content -->
+                <div x-show="activeTab === 'auto'">
+                    <!-- AI Feature Pills -->
+                    <div class="flex flex-wrap gap-3 mb-8">
+                        <button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 bg-gray-50 text-gray-500 text-[11px] font-bold hover:bg-gray-100 transition-all">
+                            <span class="text-blue-500">🎙️</span> Add voice note
+                        </button>
+                        <button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 bg-gray-50 text-gray-500 text-[11px] font-bold hover:bg-gray-100 transition-all">
+                            <span class="text-red-400">📈</span> Improve tracking
+                        </button>
+                        <button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 bg-gray-50 text-gray-500 text-[11px] font-bold hover:bg-gray-100 transition-all">
+                            <span class="text-blue-400">📄</span> Extract receipt details
+                        </button>
+                        <button type="button" class="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-100 bg-gray-50 text-gray-500 text-[11px] font-bold hover:bg-gray-100 transition-all">
+                            <span class="text-emerald-500">📊</span> General ledger entry
+                        </button>
+                    </div>
+
+                    <!-- Textarea Area -->
+                    <div class="relative mb-8">
+                        <textarea name="smart_text" rows="5" placeholder="Type order details (e.g., 5 bags of sugar to Musa at 12k each, paid 30k)..."
+                                  class="w-full text-xl md:text-2xl text-[#070840] font-medium bg-transparent border-none outline-none resize-none placeholder:text-gray-200"
+                                  :required="activeTab === 'auto'"
+                                  :value="activeTab === 'auto' ? $el.value : (manual_product + ' ' + (manual_amount ? (manual_amount + 'naira ') : '') + (manual_customer ? ('to ' + manual_customer) : '') + (manual_paid ? (', paid ' + manual_paid) : ''))"></textarea>
+
+                        <!-- Textarea Actions -->
+                        <div class="absolute bottom-0 right-0 flex items-center gap-4 p-2 bg-gray-50 rounded-2xl border border-gray-100">
+                            <button type="button" class="p-2 text-gray-400 hover:text-gray-600">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                            </button>
+                            <button type="button" class="p-2 text-gray-400 hover:text-gray-600">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            </button>
+                            <button type="button" @click="document.querySelector('textarea').value = ''; manual_customer=''; manual_product=''; manual_amount=''; manual_paid='';" class="p-2 text-gray-400 hover:text-red-500">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manual Tab Content -->
+                <div x-show="activeTab === 'manual'" class="space-y-6 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-[#070840]/40">Customer Name</label>
+                            <input type="text" x-model="manual_customer" class="w-full bg-[#070840]/5 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" placeholder="e.g. Musa Adamu">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-[#070840]/40">Product/Service</label>
+                            <input type="text" x-model="manual_product" class="w-full bg-[#070840]/5 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" placeholder="e.g. 2 bags of Rice">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-[#070840]/40">Total Amount (₦)</label>
+                            <input type="number" x-model="manual_amount" class="w-full bg-[#070840]/5 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" placeholder="0.00">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black uppercase tracking-widest text-[#070840]/40">Amount Paid (₦)</label>
+                            <input type="number" x-model="manual_paid" class="w-full bg-[#070840]/5 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-cyan-500 outline-none" placeholder="0.00">
+                        </div>
+                    </div>
+                    <p class="text-center text-[10px] text-[#070840]/30 font-bold uppercase tracking-widest">Manual entry will be converted to AI prompt on submission</p>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="w-full py-5 rounded-2xl bg-[#070840] text-white font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:shadow-2xl transition-all flex items-center justify-center gap-3">
+                    ✨🪄 GENERATE INVOICE
+                </button>
+            </div>
+
+            <div class="flex justify-between items-center p-4 px-8 text-gray-400">
+                <div class="flex items-center gap-2 text-[10px] italic">
+                    📄 Notes & verbal summaries are scanned and parsed seamlessly.
+                </div>
+                <div class="text-[10px] font-bold">
+                    v1.5 Premium
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Features Section -->
+    <div class="mt-24 text-center">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-[#070840] mb-2">Why Hundreds of Wholesalers Choose Yeedem</h2>
+        <p class="text-gray-400 text-sm mb-12">Streamlined tools built purely to improve retail cash flow retention.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+            <!-- Feature 1 -->
+            <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-500 mb-6">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="22" y1="12" x2="18" y2="12"></line><line x1="6" y1="12" x2="2" y2="12"></line><line x1="12" y1="6" x2="12" y2="2"></line><line x1="12" y1="22" x2="12" y2="18"></line></svg>
+                </div>
+                <h3 class="font-bold text-[#070840] mb-3">Quick Sales AI Input</h3>
+                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                    Record sound files, snap phone pictures of receipts, or type raw messages. Our parsing pipeline compiles tax lines instantly.
+                </p>
+                <div class="flex items-center gap-2 text-[#33CCFF] font-black text-[10px] uppercase tracking-wider cursor-pointer">
+                    ✓ COMPLIANT FORMAT <span class="text-xs">ⓘ</span>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-500 mb-6">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                </div>
+                <h3 class="font-bold text-[#070840] mb-3">Offline Lock Security</h3>
+                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                    Log transactions offline inside local structures. Sessions cache securely and sync with primary cloud databases upon network reconnect.
+                </p>
+                <div class="flex items-center gap-2 text-emerald-500 font-black text-[10px] uppercase tracking-wider cursor-pointer">
+                    ✓ PERSISTENT STORAGE <span class="text-xs">ⓘ</span>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-all">
+                <div class="w-12 h-12 bg-orange-50 rounded-2xl flex items-center justify-center text-orange-400 mb-6">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                <h3 class="font-bold text-[#070840] mb-3">Outstanding Debt Aging</h3>
+                <p class="text-gray-500 text-sm leading-relaxed mb-6">
+                    Gain deep visibility over client ledgers. Promptly dispatch polite pre-composed debt balance reminders directly over WhatsApp.
+                </p>
+                <div class="flex items-center gap-2 text-orange-400 font-black text-[10px] uppercase tracking-wider cursor-pointer">
+                    ✓ AUTOMATED WARNINGS <span class="text-xs">ⓘ</span>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-<script>
-    document.body.addEventListener('htmx:responseError', function(event) {
-        // If we get redirected to signup due to guest limit, we can just intercept and show modal or let it redirect
-        if(event.detail.xhr.responseURL && event.detail.xhr.responseURL.includes('signup')) {
-             window.location.href = "{% url 'core:signup' %}";
-        }
-    });
-</script>
+    <!-- Final CTA -->
+    <div class="mt-24 mb-24 bg-white rounded-[3rem] p-12 text-center border border-gray-100 shadow-sm max-w-4xl mx-auto">
+        <h2 class="text-2xl md:text-3xl font-extrabold text-[#070840] mb-4">Ready to Elevate Your Retail Enterprise?</h2>
+        <p class="text-gray-400 text-sm max-w-2xl mx-auto mb-8">
+            Start recording secure transaction ledgers and generating official FIRS compliant trade reports. 14-day free trial on registered merchant workspaces.
+        </p>
+        <a href="{% url 'core:signup' %}" class="inline-flex items-center px-8 py-4 bg-[#33CCFF] text-white font-black rounded-2xl shadow-xl hover:shadow-2xl transition-all tracking-wider">
+            Begin Free Ledger Account
+        </a>
+    </div>
+
+</div>
 {% endblock %}

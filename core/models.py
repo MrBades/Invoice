@@ -71,6 +71,9 @@ class Invoice(models.Model):
     clearance_status = models.CharField(max_length=50, default='Pending')
     public_token = models.UUIDField(default=uuid.uuid4, editable=False)
     is_gbese = models.BooleanField(default=False, verbose_name="Outstanding Debt")
+    trial_biz_name = models.CharField(max_length=255, blank=True, null=True)
+    trial_biz_phone = models.CharField(max_length=20, blank=True, null=True)
+    trial_biz_address = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
